@@ -71,8 +71,6 @@ def play(args):
 
     for i in range(10*int(env.max_episode_length)): ### 10 * 20s
         actions, base_vel_est = policy(obs.detach(), obs_history.detach())
-        # attacker_actions = attacker_policy(attacker_obs.detach())
-        # obs, _, rews, dones, infos = env.step(actions.detach(), attacker_actions.detach())
         obs, _, rews, dones, infos = env.step(actions.detach())
         obs_history, base_vel = env.get_extra_info()
 

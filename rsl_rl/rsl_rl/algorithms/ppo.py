@@ -6,14 +6,10 @@ from rsl_rl.modules import ActorCritic
 from rsl_rl.storage import RolloutStorage
 import numpy as np
 
-from rsl_rl.modules import AttackerActorCritic
-
 
 class PPO:
-    # attacker_ac: AttackerActorCritic
     actor_critic: ActorCritic
     def __init__(self,
-                #  attacker_ac,
                  actor_critic,
                  num_learning_epochs=1,
                  num_mini_batches=1,
@@ -79,10 +75,9 @@ class PPO:
         # for i, perm in enumerate(obs_symmetry):
         #     self.obs_sym_mat[int(abs(perm))][i] = np.sign(perm)  
 
-    def init_storage(self, num_envs, num_transitions_per_env, obs_shape, critic_obs_shape, action_shape, attacker_action_shape=None):
+    def init_storage(self, num_envs, num_transitions_per_env, obs_shape, critic_obs_shape, action_shape):
         self.storage = RolloutStorage(num_envs, num_transitions_per_env, obs_shape, \
                                         critic_obs_shape, action_shape, \
-                                        # attacker_action_shape,
                                         self.device)
 
     def act(self, obs, critic_obs, obs_history, base_vel):

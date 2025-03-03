@@ -146,4 +146,4 @@ class RolloutStorage:
                 yield obs_batch, critic_observations_batch, actions_batch, \
                         target_values_batch, advantages_batch, returns_batch, \
                         old_actions_log_prob_batch, old_mu_batch, old_sigma_batch, \
-                        dones_batch, obs_history_batch, base_vel_batch, next_obs_batch,  \
+                        dones_batch, obs_history_batch, base_vel_batch, next_obs_batch

@@ -153,11 +153,6 @@ class TaskRegistry():
             print(f"Loading model from: {resume_path}")
             runner.load(resume_path)
 
-            # resume_path = get_load_path(log_root, load_run=train_cfg.runner.attacker_load_run, checkpoint=train_cfg.runner.attacker_checkpoint)
-            # runner.attacker_load(resume_path)
-            # print(f"Loading attacker model from: {resume_path}")
-
-
         return runner, train_cfg
 
 # make global task registry

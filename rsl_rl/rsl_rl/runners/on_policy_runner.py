@@ -14,8 +14,6 @@ from rsl_rl.env import VecEnv
 from legged_gym.utils.helpers import get_load_path
 from legged_gym import LEGGED_GYM_ROOT_DIR, LEGGED_GYM_ENVS_DIR
 
-# from rsl_rl.modules import AttackerActorCritic
-
 
 class OnPolicyRunner:
 
@@ -84,15 +82,10 @@ class OnPolicyRunner:
         obs, critic_obs = self.env.get_observations()
         obs_history, base_vel = self.env.get_extra_info()
 
-        # attacker_obs, attacker_critic_obs, _ = self.env.get_attacker_infos()
-
         # obs, critic_obs = obs.to(self.device), critic_obs.to(self.device)
         self.alg.actor_critic.train() # switch to train mode (for dropout for example)
-
-### -------- attacker -------------
-        # self.alg.attacker_ac.train()
-
-
+        
+        
         ep_infos = []
         rewbuffer = deque(maxlen=100)
         lenbuffer = deque(maxlen=100)
@@ -112,7 +105,6 @@ class OnPolicyRunner:
                     obs_history, base_vel = self.env.get_extra_info()
                     # obs, critic_obs = obs.to(self.device), critic_obs.to(self.device)
         
-                    # self.alg.process_env_step(rewards, dones, infos, obs, attacker_rewards)
                     self.alg.process_env_step(rewards, dones, infos, obs)
 
                     
@@ -135,13 +127,11 @@ class OnPolicyRunner:
 
                 # Learning step
                 start = stop
-                # self.alg.compute_returns(critic_obs, attacker_critic_obs)
                 self.alg.compute_returns(critic_obs)
 
                 
             mean_value_loss, mean_surrogate_loss, mean_entropy_loss, mean_symmetry_loss,\
                 mean_recons_loss, mean_vel_loss, mean_kld_loss = self.alg.update()
-                # attacker_mean_value_loss, attacker_mean_surrogate_loss, attacker_mean_entropy_loss, attacker_mean_lips_loss = self.alg.update()
 
                 
             stop = time.time()
@@ -150,8 +140,6 @@ class OnPolicyRunner:
                 self.log(locals())
             if it % self.save_interval == 0:
                 self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(it)))
-
-                # self.attacker_save(os.path.join(self.log_dir, 'attacker_model_{}.pt'.format(it)))
 
             ep_infos.clear()
         
@@ -181,7 +169,6 @@ class OnPolicyRunner:
                 self.writer.add_scalar('Episode/' + key, value, locs['it'])
                 ep_string += f"""{f'Mean episode {key}:':>{pad}} {value:.4f}\n"""
         mean_std = self.alg.actor_critic.std.mean()
-        # attacker_mean_std = self.alg.attacker_ac.std.mean()
 
         fps = int(self.num_steps_per_env * self.env.num_envs / (locs['collection_time'] + locs['learn_time']))
 
@@ -196,14 +183,11 @@ class OnPolicyRunner:
 
         self.writer.add_scalar('Loss/learning_rate', self.alg.learning_rate, locs['it'])
         self.writer.add_scalar('Policy/mean_noise_std', mean_std.item(), locs['it'])
-        # self.writer.add_scalar('Policy/attacker_mean_noise_std', attacker_mean_std.item(), locs['it'])
 
 
         if len(locs['rewbuffer']) > 0:
             self.writer.add_scalar('Train/mean_reward', statistics.mean(locs['rewbuffer']), locs['it'])
             self.writer.add_scalar('Train/mean_episode_length', statistics.mean(locs['lenbuffer']), locs['it'])
-
-            # self.writer.add_scalar('Train/attacker_mean_reward', statistics.mean(locs['attacker_rewbuffer']), locs['it'])
 
 
 

@@ -46,11 +46,8 @@ class LeggedRobot(BaseTask):
             self.set_camera(self.cfg.viewer.pos, self.cfg.viewer.lookat)
         self._init_buffers()
         self._prepare_reward_function()
-        ### -----------attacker ---------------
-        # self.attacker_prepare_reward_function()
         self.init_done = True
 
-    # def step(self, actions, attacker_actions):
     def step(self, actions):
 
         """ Apply actions, simulate, call self.post_physics_step()
@@ -58,9 +55,6 @@ class LeggedRobot(BaseTask):
         Args:
             actions (torch.Tensor): Tensor of shape (num_envs, num_actions_per_env)
         """
-#### ------------ attacker ----------------------
-        # self.attacker_actions[:] = attacker_actions
-        # self.attack_robot(attacker_actions)
 
         clip_actions = self.cfg.normalization.clip_actions
         self.actions = torch.clip(actions, -clip_actions, clip_actions).to(self.device)
@@ -1045,11 +1039,6 @@ class LeggedRobot(BaseTask):
 
         self.external_forces_min_duration = np.ceil(self.cfg.external_forces.min_duration / self.dt)
         self.external_forces_max_duration = np.ceil(self.cfg.external_forces.max_duration / self.dt)
-
-###  attacker -----------------------------------------
-        # self.attacker_reward_scales = class_to_dict(self.cfg.rewards.attacker_scales)
-
-
 
     #------------ reward functions----------------
     def _reward_lin_vel_z(self):
