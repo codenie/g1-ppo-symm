@@ -1,0 +1,2 @@
+MorphoSymm/docs
+legged_gym/logs
