@@ -64,20 +64,20 @@ class PPO:
 
         self.num_vae_substeps = 1
         ###  vae_optimizer       
-        self.vae_optimizer = torch.optim.Adam(self.actor_critic.vae.parameters(), lr=1e-3)
+        # self.vae_optimizer = torch.optim.Adam(self.actor_critic.vae.parameters(), lr=1e-3)
 
 
         self.transition = RolloutStorage.Transition()
 
 #### ------------ symmetry -------------------------
-        self.sym_coef = sym_coef
-        self.act_sym_mat = torch.zeros((len(act_symmetry), len(act_symmetry)), device=self.device)
-        for i, perm in enumerate(act_symmetry):
-            self.act_sym_mat[int(abs(perm))][i] = np.sign(perm) 
+        # self.sym_coef = sym_coef
+        # self.act_sym_mat = torch.zeros((len(act_symmetry), len(act_symmetry)), device=self.device)
+        # for i, perm in enumerate(act_symmetry):
+        #     self.act_sym_mat[int(abs(perm))][i] = np.sign(perm) 
         
-        self.obs_sym_mat = torch.zeros((len(obs_symmetry), len(obs_symmetry)), device=self.device)
-        for i, perm in enumerate(obs_symmetry):
-            self.obs_sym_mat[int(abs(perm))][i] = np.sign(perm)  
+        # self.obs_sym_mat = torch.zeros((len(obs_symmetry), len(obs_symmetry)), device=self.device)
+        # for i, perm in enumerate(obs_symmetry):
+        #     self.obs_sym_mat[int(abs(perm))][i] = np.sign(perm)  
 
 
 #### -------------------  attacker --------------------

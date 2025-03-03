@@ -6,8 +6,15 @@ from torch.nn.modules import rnn
 from rsl_rl.modules.state_estimator import VAE
 from rsl_rl.utils.torch_utils import init_orhtogonal
 
+## 构造symmetry需要的辅助函数
+from rsl_rl.utils.symm_utils import add_repr_to_gspace, SimpleEMLP, get_symm_tensor
 
-class ActorCritic(nn.Module):
+import escnn
+import escnn.group
+from escnn.group import CyclicGroup
+from escnn.nn import FieldType, EquivariantModule, GeometricTensor
+
+class ActorCriticSymmetry(nn.Module):
     def __init__(self,  num_vae,
                         num_obs_step,
                         num_critic_obs,
@@ -22,26 +29,45 @@ class ActorCritic(nn.Module):
         activation = get_activation(activation)
 
         ### actor,  critic ---------------------
-        # mlp_input_dim_a = num_obs_step + num_vae
         mlp_input_dim_a = num_obs_step
-        
         mlp_input_dim_c = num_critic_obs
-
-        # Policy actor
-        actor_layers = []
-        actor_layers.append(nn.Linear(mlp_input_dim_a, actor_hidden_dims[0]))
-        actor_layers.append(activation)
         
-        for l in range(len(actor_hidden_dims)):
-            if l == len(actor_hidden_dims) - 1:
-                actor_layers.append(nn.Linear(actor_hidden_dims[l], num_actions))
-            else:
-                actor_layers.append(nn.Linear(actor_hidden_dims[l], actor_hidden_dims[l + 1]))
-                actor_layers.append(activation)
+        ## 建立group和space
+        G = CyclicGroup(2)
+        gspace = escnn.gspaces.no_base_space(G)
+        # 添加需要的变换函数
+        add_repr_to_gspace(G, [0, 1, 2], [-1, 1, -1], 'base_ang_vel')
+        add_repr_to_gspace(G, [0, 1, 2], [1, -1, 1], 'projected_gravity')
+        add_repr_to_gspace(G, [0, 1, 2], [1, -1, -1], 'commands')
+        add_repr_to_gspace(G, [6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 12, 20, 21, 22, 23, 24, 25, 26, 13, 14, 15, 16, 17, 18, 19],
+                              [1, -1, -1, 1, 1, -1, 1, -1, -1, 1, 1, -1, -1, 1, -1, -1, 1, -1, 1, -1, 1, -1, -1, 1, -1, 1, -1],
+                            'dof_pos_vel_action')
+        add_repr_to_gspace(G, [0, 1], [-1, -1], 'phase')
+        # add_repr_to_gspace(G, [], [], 'name')
+        # add_repr_to_gspace(G, [], [], 'name')
+        
+        ## 配置actor
+        actor_input_transitions = []
+        actor_output_transitions = []
+        actor_in_field_type = FieldType(gspace, [G.representations[name] for name in actor_input_transitions])
+        actor_out_field_type = FieldType(gspace, [G.representations[name] for name in actor_output_transitions])
+        # ## 配置critic
+        # critic_input_transitions = []
+        # critic_output_transitions = []
+        # critic_in_field_type = FieldType(gspace, [G.representations[name] for name in critic_input_transitions])
+        # critic_out_field_type = FieldType(gspace, [G.representations[name] for name in critic_output_transitions])
+     
+        ## 根据上述配置构造两个网络 
+        ## TODO: 注意两个网络，训练参数可能和普通MLP相比不一样，比如学习速度等
+        self.actor = SimpleEMLP(actor_in_field_type, actor_out_field_type,
+            hidden_dims = actor_hidden_dims, 
+            activation = activation,)
 
-        self.actor = nn.Sequential(*actor_layers)
-
-        # Value function     critic
+        # self.critic = SimpleEMLP(critic_in_field_type, critic_out_field_type,
+        #     hidden_dims = critic_hidden_dims,
+        #     activation=activation,)
+        
+        # 构造使用普通的critic网络 Value function     critic
         critic_layers = []
         critic_layers.append(nn.Linear(mlp_input_dim_c, critic_hidden_dims[0]))
         critic_layers.append(activation)
@@ -52,7 +78,7 @@ class ActorCritic(nn.Module):
                 critic_layers.append(nn.Linear(critic_hidden_dims[l], critic_hidden_dims[l + 1]))
                 critic_layers.append(activation)
         self.critic = nn.Sequential(*critic_layers)
-
+        
         print(f"Actor MLP: {self.actor}")
         print(f"Critic MLP: {self.critic}")
 

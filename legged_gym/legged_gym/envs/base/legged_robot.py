@@ -400,9 +400,11 @@ class LeggedRobot(BaseTask):
         self.obs_buf = torch.cat((  self.base_ang_vel  * self.obs_scales.ang_vel,
                                     self.projected_gravity,
                                     self.commands[:, :3] * self.commands_scale,
+                                    
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos, ### 27
                                     self.dof_vel * self.obs_scales.dof_vel,### 27
                                     self.actions,  ## 27
+                                    
                                     sin_phase,
                                     cos_phase,
                                     ),dim=-1)

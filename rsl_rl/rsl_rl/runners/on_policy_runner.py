@@ -16,6 +16,7 @@ from legged_gym import LEGGED_GYM_ROOT_DIR, LEGGED_GYM_ENVS_DIR
 
 from rsl_rl.modules import AttackerActorCritic
 
+
 class OnPolicyRunner:
 
     def __init__(self,
@@ -31,7 +32,7 @@ class OnPolicyRunner:
         self.device = device
         self.env = env
 
-        self.num_vae_encoder_output = 19
+        self.num_vae_encoder_output = None # 19 # 该参数不应该在PPO中使用.
         self.num_obs_step = env.num_obs_step
         self.num_critic_obs = env.num_critic_obs
         self.num_history = env.num_obs_history
@@ -311,7 +312,7 @@ class OnPolicyRunner:
 
     def attacker_save(self, path, infos=None):
         torch.save({
-            'model_state_dict': self.alg.attacker_ac.state_dict(),
+            # 'model_state_dict': self.alg.attacker_ac.state_dict(),
             'optimizer_state_dict': self.alg.attacker_optimizer.state_dict(),
             'iter': self.current_learning_iteration,
             'infos': infos,
@@ -319,7 +320,7 @@ class OnPolicyRunner:
 
     def attacker_load(self, path, load_optimizer=True):
         loaded_dict = torch.load(path)
-        self.alg.attacker_ac.load_state_dict(loaded_dict['model_state_dict'])
+        # self.alg.attacker_ac.load_state_dict(loaded_dict['model_state_dict'])
         if load_optimizer:
             self.alg.attacker_optimizer.load_state_dict(loaded_dict['optimizer_state_dict'])
         self.current_learning_iteration = loaded_dict['iter']
