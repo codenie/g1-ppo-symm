@@ -9,11 +9,15 @@ import torch
 import torch.nn as nn
 
 from rsl_rl.algorithms import PPO
-from rsl_rl.modules import ActorCritic
+from rsl_rl.modules import ActorCritic, ActorCriticSymmetry
 from rsl_rl.env import VecEnv
 from legged_gym.utils.helpers import get_load_path
 from legged_gym import LEGGED_GYM_ROOT_DIR, LEGGED_GYM_ENVS_DIR
 
+actor_critic_cls_dict = {
+    'ActorCritic': ActorCritic,
+    'ActorCriticSymmetry': ActorCriticSymmetry,
+}
 
 class OnPolicyRunner:
 
@@ -34,18 +38,24 @@ class OnPolicyRunner:
         self.num_obs_step = env.num_obs_step
         self.num_critic_obs = env.num_critic_obs
         self.num_history = env.num_obs_history
+        
+        assert self.cfg["policy_class_name"] in actor_critic_cls_dict, "ActorCritic类型不在可用列表中"
+        
+        actor_critic: ActorCritic = actor_critic_cls_dict[self.cfg["policy_class_name"]](
+                                                num_vae=self.num_vae_encoder_output,
+                                                num_obs_step=self.num_obs_step,
+                                                num_critic_obs=self.num_critic_obs,
+                                                num_history= self.num_history,
+                                                num_actions=self.env.num_actions,
+                                                actor_hidden_dims=self.policy_cfg["actor_hidden_dims"],
+                                                critic_hidden_dims=self.policy_cfg["critic_hidden_dims"],
+                                                activation='elu',
+                                                init_noise_std=self.policy_cfg["init_noise_std"]
+                                                ).to(self.device)
 
-
-        actor_critic: ActorCritic = ActorCritic( num_vae=self.num_vae_encoder_output,
-                                                 num_obs_step=self.num_obs_step,
-                                                 num_critic_obs=self.num_critic_obs,
-                                                 num_history= self.num_history,
-                                                 num_actions=self.env.num_actions,
-                                                 actor_hidden_dims=self.policy_cfg["actor_hidden_dims"],
-                                                 critic_hidden_dims=self.policy_cfg["critic_hidden_dims"],
-                                                 activation='elu',
-                                                 init_noise_std=self.policy_cfg["init_noise_std"]).to(self.device)
-
+        # 指定使用PPO
+        # print(f"[INFO] 指定使用PPO algorithm.")
+        assert self.cfg["algorithm_class_name"] == 'PPO', "指定使用PPO, 而当前设置没有使用该算法."
         self.alg: PPO = PPO(actor_critic, device=self.device, **self.alg_cfg)
         
         self.num_steps_per_env = self.cfg["num_steps_per_env"]

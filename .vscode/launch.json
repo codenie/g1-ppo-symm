@@ -12,7 +12,7 @@
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/legged_gym/",
             "args": [
-                "--task=g1", 
+                "--task=g1-emlp", 
                 "--num_envs=4",
             ]
         },

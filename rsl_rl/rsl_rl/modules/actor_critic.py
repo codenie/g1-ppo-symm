@@ -16,8 +16,11 @@ class ActorCritic(nn.Module):
                         actor_hidden_dims=[512, 256, 128],
                         critic_hidden_dims=[512, 256, 128],
                         activation='elu',
-                        init_noise_std=1.0
+                        init_noise_std=1.0,
+                        **kwargs
                         ):
+        if kwargs:
+            print(f"[warning] ActorCritic.__init__ got unexpected arguments, which will be ignored: " + str([key for key in kwargs.keys()]))
         super().__init__()
         activation = get_activation(activation)
 

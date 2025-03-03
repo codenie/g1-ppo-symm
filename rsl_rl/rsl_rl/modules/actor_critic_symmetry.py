@@ -23,10 +23,12 @@ class ActorCriticSymmetry(nn.Module):
                         actor_hidden_dims=[512, 256, 128],
                         critic_hidden_dims=[512, 256, 128],
                         activation='elu',
-                        init_noise_std=1.0
+                        init_noise_std=1.0,
+                        **kwargs
                         ):
+        if kwargs:
+            print("ActorCriticSymmetry.__init__ got unexpected arguments, which will be ignored: " + str([key for key in kwargs.keys()]))
         super().__init__()
-        activation = get_activation(activation)
 
         ### actor,  critic ---------------------
         mlp_input_dim_a = num_obs_step
@@ -47,10 +49,11 @@ class ActorCriticSymmetry(nn.Module):
         # add_repr_to_gspace(G, [], [], 'name')
         
         ## 配置actor
-        actor_input_transitions = []
-        actor_output_transitions = []
-        actor_in_field_type = FieldType(gspace, [G.representations[name] for name in actor_input_transitions])
-        actor_out_field_type = FieldType(gspace, [G.representations[name] for name in actor_output_transitions])
+        actor_input_transitions = ['base_ang_vel', 'projected_gravity', 'commands', 
+                                   *('dof_pos_vel_action',)*3, 'phase']
+        actor_output_transitions = ['dof_pos_vel_action']
+        self.actor_in_field_type = FieldType(gspace, [G.representations[name] for name in actor_input_transitions])
+        self.actor_out_field_type = FieldType(gspace, [G.representations[name] for name in actor_output_transitions])
         # ## 配置critic
         # critic_input_transitions = []
         # critic_output_transitions = []
@@ -59,7 +62,7 @@ class ActorCriticSymmetry(nn.Module):
      
         ## 根据上述配置构造两个网络 
         ## TODO: 注意两个网络，训练参数可能和普通MLP相比不一样，比如学习速度等
-        self.actor = SimpleEMLP(actor_in_field_type, actor_out_field_type,
+        self.actor = SimpleEMLP(self.actor_in_field_type, self.actor_out_field_type,
             hidden_dims = actor_hidden_dims, 
             activation = activation,)
 
@@ -68,15 +71,16 @@ class ActorCriticSymmetry(nn.Module):
         #     activation=activation,)
         
         # 构造使用普通的critic网络 Value function     critic
+        activation_fn = get_activation(activation)
         critic_layers = []
         critic_layers.append(nn.Linear(mlp_input_dim_c, critic_hidden_dims[0]))
-        critic_layers.append(activation)
+        critic_layers.append(activation_fn)
         for l in range(len(critic_hidden_dims)):
             if l == len(critic_hidden_dims) - 1:
                 critic_layers.append(nn.Linear(critic_hidden_dims[l], 1))
             else:
                 critic_layers.append(nn.Linear(critic_hidden_dims[l], critic_hidden_dims[l + 1]))
-                critic_layers.append(activation)
+                critic_layers.append(activation_fn)
         self.critic = nn.Sequential(*critic_layers)
         
         print(f"Actor MLP: {self.actor}")
@@ -116,7 +120,10 @@ class ActorCriticSymmetry(nn.Module):
     
 
     def update_distribution(self, observations):
-        mean = self.actor(observations)
+        # EMLP 网络需要修改输入的格式
+        observations = self.actor_in_field_type(observations)
+        # 网络正向传播
+        mean = self.actor(observations).tensor
         self.distribution = Normal(mean, mean*0. + torch.clamp(self.std, min=1e-3))
 
     def act(self, obs,  obs_history):
@@ -130,9 +137,11 @@ class ActorCriticSymmetry(nn.Module):
         return self.distribution.log_prob(actions).sum(dim=-1)
 
     def act_inference(self, obs, obs_history):
+        # TODO: 后续要使用obs_history也许增强效果
+        actor_input = self.actor_in_field_type(obs)
         # vel_est, latent = self.vae.inference(obs_history)
         # actor_obs = torch.cat((vel_est, latent, obs), dim = -1)
-        actions_mean = self.actor(obs)
+        actions_mean = self.actor(actor_input).tensor
         return actions_mean
     
     

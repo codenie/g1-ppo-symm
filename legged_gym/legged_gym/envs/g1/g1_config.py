@@ -352,11 +352,11 @@ class G1RoughCfg( LeggedRobotCfg ):
 #                     -90, -91
 #                     ]
 
-# act_symmetry = [    6, -7, -8, 9, 10, -11, \
-#                     0.0001, -1, -2, 3, 4, -5, \
-#                     -12, \
-#                     20, -21, -22, 23, -24, 25, -26, \
-#                     13, -14, -15, 16, -17, 18, -19  ]
+act_symmetry = [    6, -7, -8, 9, 10, -11, \
+                    0.0001, -1, -2, 3, 4, -5, \
+                    -12, \
+                    20, -21, -22, 23, -24, 25, -26, \
+                    13, -14, -15, 16, -17, 18, -19  ]
 
 # # sym_coef = 0.1
 # sym_coef = 1.0
@@ -370,7 +370,6 @@ class G1RoughCfgPPO( LeggedRobotCfgPPO ):
         actor_hidden_dims = [512, 256, 128]
         critic_hidden_dims = [512, 256, 128]
         activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
-
 
     class algorithm:
         # training params
@@ -388,7 +387,6 @@ class G1RoughCfgPPO( LeggedRobotCfgPPO ):
         desired_kl = 0.01
         max_grad_norm = 1.
 
-
     class runner( LeggedRobotCfgPPO.runner ):
         policy_class_name = 'ActorCritic'
         algorithm_class_name = 'PPO'
@@ -399,14 +397,56 @@ class G1RoughCfgPPO( LeggedRobotCfgPPO ):
         # num_steps_per_env = 24
         num_steps_per_env = 32
         # num_steps_per_env = 64  ### 这个数字对于加了 历史信息的  需要调整 with gamma
-        retrain_load_run = 'reload'
-        retrain_checkpoint = 1000
+        # retrain_load_run = 'reload'
+        # retrain_checkpoint = 1000
 
         resume = False
         load_run = 'play'
         checkpoint = 1000
 
-        
+
+class G1RoughCfgPPOEMLP( LeggedRobotCfgPPO ):
+    seed = -1
+    runner_class_name = 'OnPolicyRunner'
+    class policy:
+        init_noise_std = 0.8
+        actor_hidden_dims = [512, 256, 128]
+        critic_hidden_dims = [512, 256, 128]
+        activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
+
+    class algorithm:
+        # training params
+        value_loss_coef = 1.0
+        use_clipped_value_loss = True
+        clip_param = 0.2 ### normal
+        entropy_coef = 0.001 ### normal
+
+        num_learning_epochs = 5 ## normal
+        num_mini_batches = 4 # mini batch size = num_envs*nsteps / nminibatches
+        learning_rate = 5.e-4 #5.e-4
+        schedule = 'adaptive' # could be adaptive, fixed
+        gamma = 0.99 ### normal ,for g1 0.99 work
+        lam = 0.95
+        desired_kl = 0.01
+        max_grad_norm = 1.
+
+    class runner( LeggedRobotCfgPPO.runner ):
+        policy_class_name = 'ActorCriticSymmetry'
+        algorithm_class_name = 'PPO'
+        save_interval = 50 # check for potential saves every this many iterations # TODO:
+        run_name = ''
+        experiment_name = 'G1_PPO_EMLP'
+        max_iterations = 10000
+        # num_steps_per_env = 24
+        num_steps_per_env = 32
+        # num_steps_per_env = 64  ### 这个数字对于加了 历史信息的  需要调整 with gamma
+        # retrain_load_run = 'reload'
+        # retrain_checkpoint = 1000
+
+        resume = False
+        load_run = 'play'
+        checkpoint = 1000
+ 
 
 
         
