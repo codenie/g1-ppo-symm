@@ -272,10 +272,6 @@ class G1RoughCfg( LeggedRobotCfg ):
         # max_change_per_step = 200 ## N per step , dt = 0.02
 
 
-### -------- attacker --------------
-        env_external_force_proportion = 0.5
-
-
     class rewards( LeggedRobotCfg.rewards ):
         only_positive_rewards = True
         # only_positive_rewards = False  ### TODO
@@ -328,16 +324,6 @@ class G1RoughCfg( LeggedRobotCfg ):
             
             # stand_still = -1.0
             
-
-### ------- attacker ----------------- 
-        class attacker_scales():
-            attacker_alive = 1.0
-            # attacker_termination = 1.0
-            attacker_lin_vel_z = 1.0
-            attacker_ang_vel_xy = 1.0
-            attacker_base_height = 10.0
-            attacker_rpy = 10.0
-
 
 
 ### ----------  symmetry  ----------------------------

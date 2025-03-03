@@ -18,25 +18,12 @@ class RolloutStorage:
             self.observation_histories = None ### for vae
             self.base_vel = None   ### for vae
             self.next_observations = None ### for vae
-
-
-# ##----------  attacker -----------------
-#             self.attacker_observations = None
-#             self.attacker_critic_observations = None
-#             self.attacker_actions = None
-#             self.attacker_rewards = None
-#             self.attacker_values = None
-#             self.attacker_actions_log_prob = None
-#             self.attacker_action_mean = None
-#             self.attacker_action_sigma = None
-
-
         
         def clear(self):
             self.__init__()
 
     def __init__(self, num_envs, num_transitions_per_env, obs_shape, critic_obs_shape,\
-                            actions_shape, attacker_actions_shape, device='cpu'):
+                            actions_shape, device='cpu'):
         
         self.device = device
 
@@ -64,23 +51,6 @@ class RolloutStorage:
         self.next_observations = \
                 torch.zeros(num_transitions_per_env, num_envs, obs_shape, device=self.device)
 
-
-###--------------- attacker  ----------------------------------
-        # self.attacker_observations = torch.zeros(num_transitions_per_env, num_envs, obs_shape+attacker_actions_shape, device=self.device)
-        # self.attacker_critic_observations = \
-        #         torch.zeros(num_transitions_per_env, num_envs, critic_obs_shape+attacker_actions_shape, device=self.device)
-        # self.attacker_rewards = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device)
-        # self.attacker_actions = \
-        #         torch.zeros(num_transitions_per_env, num_envs, attacker_actions_shape, device=self.device)
-        # self.attacker_actions_log_prob = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device)
-        # self.attacker_values = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device)
-        # self.attacker_returns = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device)
-        # self.attacker_advantages = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device)
-        # self.attacker_mu = torch.zeros(num_transitions_per_env, num_envs, attacker_actions_shape, device=self.device)
-        # self.attacker_sigma = torch.zeros(num_transitions_per_env, num_envs, attacker_actions_shape, device=self.device)
-
-
-
         self.num_transitions_per_env = num_transitions_per_env
         self.num_envs = num_envs
 
@@ -105,18 +75,6 @@ class RolloutStorage:
         self.base_vel[self.step].copy_(transition.base_vel)
         self.next_observations[self.step].copy_(transition.next_observations)
 
-# #### --------------   attacker  -----------------------
-#         self.attacker_observations[self.step].copy_(transition.attacker_observations)
-#         self.attacker_critic_observations[self.step].copy_(transition.attacker_critic_observations)
-#         self.attacker_actions[self.step].copy_(transition.attacker_actions)
-#         self.attacker_rewards[self.step].copy_(transition.attacker_rewards.view(-1, 1))
-#         self.attacker_values[self.step].copy_(transition.attacker_values)
-#         self.attacker_actions_log_prob[self.step].copy_(transition.attacker_actions_log_prob.view(-1, 1))
-#         self.attacker_mu[self.step].copy_(transition.attacker_action_mean)
-#         self.attacker_sigma[self.step].copy_(transition.attacker_action_sigma)
-
-
-
         self.step += 1
         
 
@@ -140,25 +98,6 @@ class RolloutStorage:
         self.advantages = self.returns - self.values
         self.advantages = (self.advantages - self.advantages.mean()) / (self.advantages.std() + 1e-8)
         
-
-    def attacker_compute_returns(self, last_values, gamma, lam):
-        advantage = 0
-        for step in reversed(range(self.num_transitions_per_env)):
-            if step == self.num_transitions_per_env - 1:
-                next_values = last_values
-            else:
-                next_values = self.attacker_values[step + 1]
-            next_is_not_terminal = 1.0 - self.dones[step].float()
-            delta = self.attacker_rewards[step] + next_is_not_terminal * gamma * next_values - self.attacker_values[step]
-            advantage = delta + next_is_not_terminal * gamma * lam * advantage
-            self.attacker_returns[step] = advantage + self.attacker_values[step]
-
-        # Compute and normalize the advantages
-        self.attacker_advantages = self.attacker_returns - self.attacker_values
-        self.attacker_advantages = (self.attacker_advantages - self.attacker_advantages.mean()) / (self.attacker_advantages.std() + 1e-8)
-        
-
-
     def mini_batch_generator(self, num_mini_batches, num_epochs=8):
         batch_size = self.num_envs * self.num_transitions_per_env
         mini_batch_size = batch_size // num_mini_batches
@@ -179,17 +118,6 @@ class RolloutStorage:
         obs_history = self.observation_histories.flatten(0, 1)
         base_vel = self.base_vel.flatten(0, 1)
         next_observations = self.next_observations.flatten(0, 1)
-
-#### --------   attacker -----------------
-        # attacker_observations = self.attacker_observations.flatten(0, 1)
-        # attacker_critic_observations = self.attacker_critic_observations.flatten(0, 1)
-        # attacker_actions = self.attacker_actions.flatten(0, 1)
-        # attacker_values = self.attacker_values.flatten(0, 1)
-        # attacker_returns = self.attacker_returns.flatten(0, 1)
-        # attacker_old_actions_log_prob = self.attacker_actions_log_prob.flatten(0, 1)
-        # attacker_advantages = self.attacker_advantages.flatten(0, 1)
-        # attacker_old_mu = self.attacker_mu.flatten(0, 1)
-        # attacker_old_sigma = self.attacker_sigma.flatten(0, 1)
 
 
         for epoch in range(num_epochs):
@@ -214,22 +142,8 @@ class RolloutStorage:
                 base_vel_batch = base_vel[batch_idx]
                 next_obs_batch = next_observations[batch_idx]
 
-#### -------------  attacker ---------------------
-                # attacker_obs_batch = attacker_observations[batch_idx]
-                # attacker_critic_observations_batch = attacker_critic_observations[batch_idx]
-                # attacker_actions_batch = attacker_actions[batch_idx]
-                # attacker_target_values_batch = attacker_values[batch_idx]
-                # attacker_returns_batch = attacker_returns[batch_idx]
-                # attacker_old_actions_log_prob_batch = attacker_old_actions_log_prob[batch_idx]
-                # attacker_advantages_batch = attacker_advantages[batch_idx]
-                # attacker_old_mu_batch = attacker_old_mu[batch_idx]
-                # attacker_old_sigma_batch = attacker_old_sigma[batch_idx]                
-                
                 
                 yield obs_batch, critic_observations_batch, actions_batch, \
                         target_values_batch, advantages_batch, returns_batch, \
                         old_actions_log_prob_batch, old_mu_batch, old_sigma_batch, \
                         dones_batch, obs_history_batch, base_vel_batch, next_obs_batch,  \
-                        # attacker_obs_batch, attacker_critic_observations_batch, \
-                        # attacker_actions_batch, attacker_target_values_batch, attacker_advantages_batch, attacker_returns_batch, \
-                        # attacker_old_actions_log_prob_batch, attacker_old_mu_batch, attacker_old_sigma_batch

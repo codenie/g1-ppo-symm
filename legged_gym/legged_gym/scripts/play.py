@@ -48,20 +48,10 @@ def play(args):
     obs, _ = env.get_observations()
     obs_history, base_vel = env.get_extra_info()
 
-    # attacker_obs, _, _ = env.get_attacker_infos()
-
-    
     # load policy
     train_cfg.runner.resume = True
     ppo_runner, train_cfg = task_registry.make_alg_runner(env=env, name=args.task, args=args, train_cfg=train_cfg)
     policy = ppo_runner.get_inference_policy(device=env.device)
-
-    attacker_policy = ppo_runner.attacker_get_inference_policy(device=env.device)
-
-
-    # ppo_runner.alg.attacker_ac.to(env.device)
-    # attacker_policy = ppo_runner.alg.attacker_ac.act
-
 
     
     logger = Logger(env.dt) ### env dt  is  control dt
@@ -87,16 +77,9 @@ def play(args):
         obs_history, base_vel = env.get_extra_info()
 
 
-        # attacker_obs, _, _ = env.get_attacker_infos()
-
-
-
         if i > start_state_log and i< stop_state_log:
             logger.log_states(
                 {
-
-                    # 'external_force': torch.tanh(env.attacker_actions[robot_index, :3]).detach().cpu().numpy(),
-                    # 'external_force_pos': torch.tanh(env.attacker_actions[robot_index, 3:]).detach().cpu().numpy(),
 
                     'base_vel_est':base_vel_est[robot_index,:].detach().cpu().numpy(),
                     # 'base_height_est':base_height_est[robot_index,:].detach().cpu().numpy(),

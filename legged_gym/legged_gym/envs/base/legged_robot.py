@@ -90,62 +90,6 @@ class LeggedRobot(BaseTask):
     def get_extra_info(self):
         return self.obs_history_buf, self.base_lin_vel 
 
-
-### ------ attacker --------------
-    def get_attacker_infos(self):
-        return self.attacker_obs_buf, self.attacker_critic_obs_buf, self.attacker_rew_buf
-
-### ---------- attacker -----------------
-    def attack_robot(self, attacker_actions):
-        attacker_actions_tanh = torch.tanh(attacker_actions)
-        upper_body_attack_force = attacker_actions_tanh[:,:3]
-        upper_body_attack_pos = attacker_actions_tanh[:,3:6]
-        left_foot_attack_force_xy = attacker_actions_tanh[:,6:8]
-        right_foot_attack_force_xy = attacker_actions_tanh[:,8:10]
-
-###-------------  攻击失败 ----------------
-        # upper_body_attack_force[:,:2] *=  200
-        # upper_body_attack_force[:,2:3] = upper_body_attack_force[:,2:3] * 100 - 100
-        # left_foot_attack_force_xy *= 100
-        # right_foot_attack_force_xy *= 100
-###------------   攻击成功 --------------------------------
-        upper_body_attack_force[:,:2] *=  300
-        upper_body_attack_force[:,2:3] = upper_body_attack_force[:,2:3] * 100 - 100
-        left_foot_attack_force_xy *= 100
-        right_foot_attack_force_xy *= 100
-
-        upper_body_attack_pos[:,0] *= 0.03
-        upper_body_attack_pos[:,1] *= 0.06
-        upper_body_attack_pos[:,2] *= 0.10
-
-
-### --------------  training --------------------------------
-        self.apply_body_forces[:] = 0.0
-### -------------- ---   train  attacker policy -----------------        
-        self.apply_body_forces[:,13,:] = upper_body_attack_force
-        self.apply_body_forces[:,5,:2] = left_foot_attack_force_xy
-        self.apply_body_forces[:,11,:2] = right_foot_attack_force_xy
-        self.pos_of_apply_body_forces[:] = self.rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:,0:3]
-        self.pos_of_apply_body_forces[:,13,2] += 0.22
-        self.pos_of_apply_body_forces[:,13,:] += upper_body_attack_pos
-        self.gym.apply_rigid_body_force_at_pos_tensors(self.sim, \
-            gymtorch.unwrap_tensor(self.apply_body_forces), gymtorch.unwrap_tensor(self.pos_of_apply_body_forces), gymapi.ENV_SPACE) #ENV_SPACE / LOCAL_SPACE
-
-### ----------------  train locomotion policy -----------------------
-        # self.apply_body_forces[:,13,:] = upper_body_attack_force * self.env_apply_body_forces_flag[:].unsqueeze(-1)
-        # self.apply_body_forces[:,5,:2] = left_foot_attack_force_xy * self.env_apply_body_forces_flag[:].unsqueeze(-1)
-        # self.apply_body_forces[:,11,:2] = right_foot_attack_force_xy * self.env_apply_body_forces_flag[:].unsqueeze(-1)
-        # self.pos_of_apply_body_forces[:] = self.rigid_body_state.view(self.num_envs, self.num_bodies, 13)[:,:,0:3]
-        # self.pos_of_apply_body_forces[:,13,2] += 0.22
-        # self.pos_of_apply_body_forces[:,13,:] += upper_body_attack_pos
-        # self.gym.apply_rigid_body_force_at_pos_tensors(self.sim, \
-        #     gymtorch.unwrap_tensor(self.apply_body_forces), gymtorch.unwrap_tensor(self.pos_of_apply_body_forces), gymapi.ENV_SPACE) #ENV_SPACE / LOCAL_SPACE
-
-
-
-
-
-
     def post_physics_step(self):
         """ check terminations, compute observations and rewards
             calls self._post_physics_step_callback() for common computations 
@@ -195,10 +139,7 @@ class LeggedRobot(BaseTask):
         # compute observations, rewards, resets, ...
         self.check_termination()
         self.compute_reward()
-
-        # #### --------- attacker ---------
-        # self.attacker_compute_reward()
-
+        
         reset_env_ids = self.reset_buf.nonzero(as_tuple=False).flatten()
         self.reset_idx(reset_env_ids)
 
@@ -322,16 +263,6 @@ class LeggedRobot(BaseTask):
         self._resample_commands(env_ids)
         self.commands[env_ids] = 0.0  
         
-
-## ------------ attacker ----------------
-        #### 使用 torch.bernoulli 生成二进制随机变量,    
-        # env_apply_body_force_probabilities = torch.full(self.env_apply_body_forces_flag[env_ids].shape, self.cfg.external_forces.env_external_force_proportion, device=self.device)
-        # self.env_apply_body_forces_flag[env_ids] = torch.bernoulli(env_apply_body_force_probabilities)
-        
-        
-        # self._resample_external_forces(env_ids)  ###  inclued  # self.external_forces_counter[reset_env_ids] = 0
-
-
         # fill extras
         self.extras["episode"] = {}
         for key in self.episode_sums.keys():
@@ -343,35 +274,6 @@ class LeggedRobot(BaseTask):
         if self.cfg.env.send_timeouts:
             self.extras["time_outs"] = self.time_out_buf
 
-
-        # ####----- attacker ---------------
-        # for key in self.attacker_episode_sums.keys():
-        #     self.extras["episode"]['rew_' + key] = torch.mean(self.attacker_episode_sums[key][env_ids]) / self.max_episode_length_s
-        #     self.attacker_episode_sums[key][env_ids] = 0.
-
-
-
-## ------------ attacker -------------------
-    def attacker_compute_reward(self):
-        """ Compute rewards
-            Calls each reward function which had a non-zero scale (processed in self._prepare_reward_function())
-            adds each terms to the episode sums and to the total reward
-        """
-        self.attacker_rew_buf[:] = 0.
-        for i in range(len(self.attacker_reward_functions)):
-            name = self.attacker_reward_names[i]
-            rew = self.attacker_reward_functions[i]() * self.attacker_reward_scales[name]
-            self.attacker_rew_buf += rew
-            self.attacker_episode_sums[name] += rew
-        # if self.cfg.rewards.only_positive_rewards:
-            # self.rew_buf[:] = torch.clip(self.rew_buf[:], min=0.)
-        # add termination reward after clipping
-        # if "termination" in self.reward_scales:
-            # rew = self._reward_termination() * self.reward_scales["termination"]
-            # self.rew_buf += rew
-            # self.episode_sums["termination"] += rew
-
-    
     def compute_reward(self):
         """ Compute rewards
             Calls each reward function which had a non-zero scale (processed in self._prepare_reward_function())
@@ -433,15 +335,6 @@ class LeggedRobot(BaseTask):
         ### get obs_history  ### 正数， 向后移动,  
         self.obs_history_buf[:,:] = torch.roll(self.obs_history_buf, self.cfg.env.num_obs_step, dims=-1)
         self.obs_history_buf[:,:self.cfg.env.num_obs_step].copy_(self.obs_buf) # TODO: 这里是不是有问题
-
-
-        # self.attacker_obs_buf = torch.cat(( self.obs_buf,
-        #                                     self.attacker_actions,
-        #                                     ),dim=-1)
-        # self.attacker_critic_obs_buf = torch.cat((  self.critic_obs_buf,
-        #                                             self.attacker_actions,
-        #                                     ),dim=-1)
-
 
     def create_sim(self):
         """ Creates simulation, terrain and evironments
@@ -901,40 +794,6 @@ class LeggedRobot(BaseTask):
         ###  以 设定的 添加扰动力的 环境的 占比 进行采用， 选择一些环境施加扰动，  而不是所有环境都施加扰动   ------------------
         self.env_apply_body_forces_flag = torch.zeros(self.num_envs, device=self.device, dtype=torch.float,requires_grad=False)
 
-
-### ----------- attacker -------------
-        self.attacker_counter = 0
-        self.attacker_obs_buf = torch.zeros(self.num_envs, self.num_obs_step+10, device=self.device, dtype=torch.float)
-        self.attacker_critic_obs_buf = torch.zeros(self.num_envs, self.num_critic_obs+10, device=self.device, dtype=torch.float)
-        self.attacker_actions = torch.zeros(self.num_envs, 10, dtype=torch.float, device=self.device, requires_grad=False)
-        self.attacker_rew_buf = torch.zeros(self.num_envs, device=self.device, dtype=torch.float)
-        
-
-
-
-#### -----  attacker --------
-    def attacker_prepare_reward_function(self):
-        for key in list(self.attacker_reward_scales.keys()):
-            scale = self.attacker_reward_scales[key]
-            if scale==0:
-                self.attacker_reward_scales.pop(key) 
-            else:
-                self.attacker_reward_scales[key] *= self.dt
-        # prepare list of functions
-        self.attacker_reward_functions = []
-        self.attacker_reward_names = []
-        for name, scale in self.attacker_reward_scales.items():
-            if name=="termination":
-                continue
-            self.attacker_reward_names.append(name)
-            name = '_reward_' + name
-            self.attacker_reward_functions.append(getattr(self, name))
-
-        # reward episode sums
-        self.attacker_episode_sums = {name: torch.zeros(self.num_envs, dtype=torch.float, device=self.device, requires_grad=False)
-                             for name in self.attacker_reward_scales.keys()}
-        
-
     def _prepare_reward_function(self):
         """ Prepares a list of reward functions, whcih will be called to compute the total reward.
             Looks for self._reward_<REWARD_NAME>, where <REWARD_NAME> are names of all non zero reward scales in the cfg.
@@ -1188,7 +1047,7 @@ class LeggedRobot(BaseTask):
         self.external_forces_max_duration = np.ceil(self.cfg.external_forces.max_duration / self.dt)
 
 ###  attacker -----------------------------------------
-        self.attacker_reward_scales = class_to_dict(self.cfg.rewards.attacker_scales)
+        # self.attacker_reward_scales = class_to_dict(self.cfg.rewards.attacker_scales)
 
 
 
@@ -1369,43 +1228,3 @@ class LeggedRobot(BaseTask):
         # Penalize changes in actions_smooth
         return torch.sum(torch.square(self.actions[:,13:] - 2*self.last_actions[:,13:] + self.last_last_actions[:,13:]), dim=1)
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### ----------- attacker -------------------------
-    def _reward_attacker_alive(self):
-        return -1.0
-    
-    def _reward_attacker_termination(self):
-        return self.reset_buf * ~self.time_out_buf
-            
-    def _reward_attacker_lin_vel_z(self):
-        return torch.square(self.base_lin_vel[:, 2])
-    
-    def _reward_attacker_ang_vel_xy(self):
-        return torch.sum(torch.square(self.base_ang_vel[:, :2]), dim=1)
-    
-    def _reward_attacker_base_height(self):
-        base_height = self.root_states[:, 2]
-        return torch.square(0.8 - base_height - self.measured_heights[:,93])
-    
-    def _reward_attacker_rpy(self):
-        return torch.abs(self.base_rpy[:,0]) + torch.abs(self.base_rpy[:,1])

@@ -14,7 +14,7 @@ from rsl_rl.env import VecEnv
 from legged_gym.utils.helpers import get_load_path
 from legged_gym import LEGGED_GYM_ROOT_DIR, LEGGED_GYM_ENVS_DIR
 
-from rsl_rl.modules import AttackerActorCritic
+# from rsl_rl.modules import AttackerActorCritic
 
 
 class OnPolicyRunner:
@@ -48,29 +48,14 @@ class OnPolicyRunner:
                                                  activation='elu',
                                                  init_noise_std=self.policy_cfg["init_noise_std"]).to(self.device)
 
-###  ----------Attacker ------------------
-        attacker_num_action = 10
-        attacker_obs = self.num_obs_step+ attacker_num_action
-        attacker_critic_obs = self.num_critic_obs + attacker_num_action
-
-        attacker_ac: AttackerActorCritic = AttackerActorCritic( num_actor_obs = attacker_obs,
-                                                                num_critic_obs = attacker_critic_obs,
-                                                                num_actions = attacker_num_action,
-                                                                actor_hidden_dims=[256, 128],
-                                                                critic_hidden_dims=[256, 128],
-                                                                activation='elu',
-                                                                init_noise_std=1.0).to(self.device)
-
-        self.alg: PPO = PPO(attacker_ac, actor_critic, \
-                            device=self.device, **self.alg_cfg)
+        self.alg: PPO = PPO(actor_critic, device=self.device, **self.alg_cfg)
         
         self.num_steps_per_env = self.cfg["num_steps_per_env"]
         self.save_interval = self.cfg["save_interval"]
 
         # init storage and model
         self.alg.init_storage(self.env.num_envs, self.num_steps_per_env, \
-                        self.num_obs_step, self.num_critic_obs, self.env.num_actions,
-                        attacker_num_action)
+                        self.num_obs_step, self.num_critic_obs, self.env.num_actions)
 
         # Log
         self.log_dir = log_dir
@@ -87,12 +72,6 @@ class OnPolicyRunner:
         # self.load(resume_path)
         # self.current_learning_iteration = 0
         
-        # attacker_resume_path = get_load_path(log_root, load_run=self.cfg['attacker_retrain_load_run'], checkpoint= self.cfg['attacker_retrain_checkpoint'])
-        # self.attacker_load(attacker_resume_path)
-        # print(f"Loading model from: {attacker_resume_path}")
-
-
-    
 
     def learn(self, num_learning_iterations, init_at_random_ep_len=False):
         # initialize writer
@@ -120,25 +99,17 @@ class OnPolicyRunner:
         cur_reward_sum = torch.zeros(self.env.num_envs, dtype=torch.float, device=self.device)
         cur_episode_length = torch.zeros(self.env.num_envs, dtype=torch.float, device=self.device)
 
-        # attacker_rewbuffer = deque(maxlen=100)
-        # attacker_cur_reward_sum = torch.zeros(self.env.num_envs, dtype=torch.float, device=self.device)
-
-
         tot_iter = self.current_learning_iteration + num_learning_iterations
         for it in range(self.current_learning_iteration, tot_iter):
             start = time.time()
             # Rollout
             with torch.inference_mode():
                 for i in range(self.num_steps_per_env):
-                    # actions, attacker_actions = self.alg.act(obs, critic_obs, obs_history, base_vel, base_height, attacker_obs, attacker_critic_obs)
-                    # obs, critic_obs, rewards, dones, infos = self.env.step(actions, attacker_actions)  
-
 
                     actions = self.alg.act(obs, critic_obs, obs_history, base_vel)
                     obs, critic_obs, rewards, dones, infos = self.env.step(actions)  
 
                     obs_history, base_vel = self.env.get_extra_info()
-                    # attacker_obs, attacker_critic_obs, attacker_rewards = self.env.get_attacker_infos()
                     # obs, critic_obs = obs.to(self.device), critic_obs.to(self.device)
         
                     # self.alg.process_env_step(rewards, dones, infos, obs, attacker_rewards)
@@ -158,10 +129,6 @@ class OnPolicyRunner:
                         lenbuffer.extend(cur_episode_length[new_ids][:, 0].cpu().numpy().tolist())
                         cur_reward_sum[new_ids] = 0
                         cur_episode_length[new_ids] = 0
-
-                        # attacker_cur_reward_sum += attacker_rewards
-                        # attacker_rewbuffer.extend(attacker_cur_reward_sum[new_ids][:, 0].cpu().numpy().tolist())
-                        # attacker_cur_reward_sum[new_ids] = 0
 
                 stop = time.time()
                 collection_time = stop - start
@@ -214,7 +181,7 @@ class OnPolicyRunner:
                 self.writer.add_scalar('Episode/' + key, value, locs['it'])
                 ep_string += f"""{f'Mean episode {key}:':>{pad}} {value:.4f}\n"""
         mean_std = self.alg.actor_critic.std.mean()
-        attacker_mean_std = self.alg.attacker_ac.std.mean()
+        # attacker_mean_std = self.alg.attacker_ac.std.mean()
 
         fps = int(self.num_steps_per_env * self.env.num_envs / (locs['collection_time'] + locs['learn_time']))
 
@@ -226,13 +193,6 @@ class OnPolicyRunner:
         self.writer.add_scalar('Loss/recons', locs['mean_recons_loss'], locs['it'])
         self.writer.add_scalar('Loss/vel', locs['mean_vel_loss'], locs['it'])
         self.writer.add_scalar('Loss/kld', locs['mean_kld_loss'], locs['it'])
-
-        # self.writer.add_scalar('Loss/attacker_value_function', locs['attacker_mean_value_loss'], locs['it'])
-        # self.writer.add_scalar('Loss/attacker_surrogate', locs['attacker_mean_surrogate_loss'], locs['it'])
-        # self.writer.add_scalar('Loss/attacker_entropy', locs['attacker_mean_entropy_loss'], locs['it'])
-        # self.writer.add_scalar('Loss/attacker_lips_loss', locs['attacker_mean_lips_loss'], locs['it'])
-
-
 
         self.writer.add_scalar('Loss/learning_rate', self.alg.learning_rate, locs['it'])
         self.writer.add_scalar('Policy/mean_noise_std', mean_std.item(), locs['it'])
@@ -307,31 +267,6 @@ class OnPolicyRunner:
         if device is not None:
             self.alg.actor_critic.to(device)
         return self.alg.actor_critic.act_inference
-
-
-
-    def attacker_save(self, path, infos=None):
-        torch.save({
-            # 'model_state_dict': self.alg.attacker_ac.state_dict(),
-            'optimizer_state_dict': self.alg.attacker_optimizer.state_dict(),
-            'iter': self.current_learning_iteration,
-            'infos': infos,
-            }, path)
-
-    def attacker_load(self, path, load_optimizer=True):
-        loaded_dict = torch.load(path)
-        # self.alg.attacker_ac.load_state_dict(loaded_dict['model_state_dict'])
-        if load_optimizer:
-            self.alg.attacker_optimizer.load_state_dict(loaded_dict['optimizer_state_dict'])
-        self.current_learning_iteration = loaded_dict['iter']
-        return loaded_dict['infos']
-
-    def attacker_get_inference_policy(self, device=None):
-        self.alg.attacker_ac.eval() # switch to evaluation mode (dropout for example)
-        if device is not None:
-            self.alg.attacker_ac.to(device)
-        return self.alg.attacker_ac.act_inference
-
 
 
 
