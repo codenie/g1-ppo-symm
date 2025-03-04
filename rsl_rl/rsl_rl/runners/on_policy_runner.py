@@ -14,6 +14,8 @@ from rsl_rl.env import VecEnv
 from legged_gym.utils.helpers import get_load_path
 from legged_gym import LEGGED_GYM_ROOT_DIR, LEGGED_GYM_ENVS_DIR
 
+from rsl_rl.utils.torch_utils import preserve_training_state
+
 actor_critic_cls_dict = {
     'ActorCritic': ActorCritic,
     'ActorCriticSymmetry': ActorCriticSymmetry,
@@ -104,6 +106,7 @@ class OnPolicyRunner:
 
         tot_iter = self.current_learning_iteration + num_learning_iterations
         for it in range(self.current_learning_iteration, tot_iter):
+            # self.alg.actor_critic.train() # switch to train mode (for dropout for example)
             start = time.time()
             # Rollout
             with torch.inference_mode():
@@ -235,24 +238,46 @@ class OnPolicyRunner:
                                locs['num_learning_iterations'] - locs['it']):.1f}s\n""")
         print(log_string)
 
-    def save(self, path, infos=None):
-        torch.save({
-            'model_state_dict': self.alg.actor_critic.state_dict(),
-            'optimizer_state_dict': self.alg.optimizer.state_dict(),
-            'iter': self.current_learning_iteration,
-            'infos': infos,
-            }, path)
+    def save(self, path:str, infos=None):
+        """保存模型的权重。 如果使用了ESCNN模型，注意保存&load时都要切换为 training 状态.
+            Ref. https://quva-lab.github.io/escnn/api/escnn.nn.html?highlight=state_dict    
 
-    def load(self, path, load_optimizer=True):
-        loaded_dict = torch.load(path)
-        self.alg.actor_critic.load_state_dict(loaded_dict['model_state_dict'])
-        if load_optimizer:
-            self.alg.optimizer.load_state_dict(loaded_dict['optimizer_state_dict'])
-        self.current_learning_iteration = loaded_dict['iter']
+        Args:
+            path (_type_): 保存位置
+            infos (_type_, optional): 可选的信息，一般为None. Defaults to None.
+        """
+        with preserve_training_state(self.alg.actor_critic):
+            self.alg.actor_critic.eval() # 注意ECSNN网络一定要在eval模式下进行保存
+            torch.save({
+                'model_state_dict': self.alg.actor_critic.state_dict(),  
+                'optimizer_state_dict': self.alg.optimizer.state_dict(),
+                'iter': self.current_learning_iteration,
+                'infos': infos,
+                }, path)
+        # 
+        
+    def load(self, path:str, load_optimizer:bool=True):
+        """加载模型权重。同save函数要求要在eval模式下进行。ESCNN文档
 
-        # with torch.no_grad():
-        #     self.alg.actor_critic.std.copy_(torch.ones_like(self.alg.actor_critic.std)*0.2)
+        Args:
+            path (str): 文件路径
+            load_optimizer (bool, optional): 是否加载optimizer. Defaults to True.
 
+        Returns:
+            _type_: _description_
+        """
+        with preserve_training_state(self.alg.actor_critic):
+            # 注意一定要在eval模式下加载这个网络！ 这是ESCNN的要求
+            self.alg.actor_critic.eval() # switch to evaluation mode (dropout for example)
+            
+            loaded_dict = torch.load(path)
+            self.alg.actor_critic.load_state_dict(loaded_dict['model_state_dict']) # TODO: 加载错误
+            if load_optimizer:
+                self.alg.optimizer.load_state_dict(loaded_dict['optimizer_state_dict'])
+            self.current_learning_iteration = loaded_dict['iter']
+
+            # with torch.no_grad():
+            #     self.alg.actor_critic.std.copy_(torch.ones_like(self.alg.actor_critic.std)*0.2)
 
         return loaded_dict['infos']
 

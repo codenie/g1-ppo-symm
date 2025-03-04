@@ -41,3 +41,22 @@ def get_activation(act_name):
     else:
         print("invalid activation function!")
         return None
+
+
+from contextlib import contextmanager
+
+@contextmanager
+def preserve_training_state(model:nn.Module):
+    """模型的training状态的上下文切换, 在该管理器内执行任意事情，最后都会恢复model的training状态
+        本代码用于在load和save时管理模型的training状态
+
+    Args:
+        model (nn.module): pytorch神经网络模型
+    """
+    # 保存当前训练状态
+    was_training = model.training
+    try:
+        yield
+    finally:
+        # 恢复原始状态
+        model.train(was_training)

@@ -1,1 +1,2 @@
-legged_gym/logs
++ legged_gym/logs
+- *

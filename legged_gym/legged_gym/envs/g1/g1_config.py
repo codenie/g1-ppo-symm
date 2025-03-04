@@ -433,7 +433,7 @@ class G1RoughCfgPPOEMLP( LeggedRobotCfgPPO ):
     class runner( LeggedRobotCfgPPO.runner ):
         policy_class_name = 'ActorCriticSymmetry'
         algorithm_class_name = 'PPO'
-        save_interval = 50 # check for potential saves every this many iterations # TODO:
+        save_interval = 1 #100 # check for potential saves every this many iterations # TODO:
         run_name = ''
         experiment_name = 'G1_PPO_EMLP'
         max_iterations = 10000

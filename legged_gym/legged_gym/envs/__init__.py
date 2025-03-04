@@ -9,7 +9,7 @@ import os
 
 from legged_gym.utils.task_registry import task_registry
 
-# task_registry.register( "g1", LeggedRobot, G1RoughCfg(), G1RoughCfgPPO() )
+task_registry.register( "g1", LeggedRobot, G1RoughCfg(), G1RoughCfgPPO() )
 
 task_registry.register( "g1-emlp", LeggedRobot, G1RoughCfg(), G1RoughCfgPPOEMLP() )
 

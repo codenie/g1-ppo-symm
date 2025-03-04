@@ -13,7 +13,9 @@
             "cwd": "${workspaceFolder}/legged_gym/",
             "args": [
                 "--task=g1-emlp", 
-                "--num_envs=4",
+                "--num_envs=8",
+                "--sim_device=cpu",
+                "--rl_device=cpu",
             ]
         },
         {
