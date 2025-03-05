@@ -86,6 +86,17 @@ class OnPolicyRunner:
     def learn(self, num_learning_iterations, init_at_random_ep_len=False):
         # initialize writer
         if self.log_dir is not None and self.writer is None:
+            
+            ## 添加wandb logger
+            try:
+                import wandb
+            except:
+                print(f"[warning] Wandb is not installed.")
+            if wandb is not None:
+                # 记录wandb的信息并同步到网上
+                print(f"[info] wandb detected. But the wandb is not initialized.")
+                # wandb.init(project="my_project", sync_tensorboard=True)
+            
             self.writer = SummaryWriter(log_dir=self.log_dir, flush_secs=10)
 
         ### NOTE very useful
