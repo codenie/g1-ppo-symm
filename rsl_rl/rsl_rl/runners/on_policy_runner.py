@@ -282,7 +282,9 @@ class OnPolicyRunner:
             self.alg.actor_critic.eval() # switch to evaluation mode (dropout for example)
             
             loaded_dict = torch.load(path)
-            self.alg.actor_critic.load_state_dict(loaded_dict['model_state_dict']) # TODO: 加载错误
+            self.alg.actor_critic.load_state_dict(loaded_dict['model_state_dict'], strict=False)
+            print(f"[warning] 加载模型参数权重时, 为了兼容之前的权重文件, 设置了 strict=False")
+            # TODO: 检测加载中是否有缺失 / 多余的权重参数。
             if load_optimizer:
                 self.alg.optimizer.load_state_dict(loaded_dict['optimizer_state_dict'])
             self.current_learning_iteration = loaded_dict['iter']

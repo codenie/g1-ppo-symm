@@ -55,10 +55,10 @@ class ActorCriticSymmetry(nn.Module):
         self.actor_in_field_type = FieldType(gspace, [G.representations[name] for name in actor_input_transitions])
         self.actor_out_field_type = FieldType(gspace, [G.representations[name] for name in actor_output_transitions])
         # ## 配置critic
-        # critic_input_transitions = []
-        # critic_output_transitions = []
-        # critic_in_field_type = FieldType(gspace, [G.representations[name] for name in critic_input_transitions])
-        # critic_out_field_type = FieldType(gspace, [G.representations[name] for name in critic_output_transitions])
+        critic_input_transitions = []
+        critic_output_transitions = []
+        critic_in_field_type = FieldType(gspace, [G.representations[name] for name in critic_input_transitions])
+        critic_out_field_type = FieldType(gspace, [G.representations[name] for name in critic_output_transitions])
      
         ## 根据上述配置构造两个网络 
         ## TODO: 注意两个网络，训练参数可能和普通MLP相比不一样，比如学习速度等
@@ -66,9 +66,9 @@ class ActorCriticSymmetry(nn.Module):
             hidden_dims = actor_hidden_dims, 
             activation = activation,)
 
-        # self.critic = SimpleEMLP(critic_in_field_type, critic_out_field_type,
-        #     hidden_dims = critic_hidden_dims,
-        #     activation=activation,)
+        self.critic = SimpleEMLP(critic_in_field_type, critic_out_field_type,
+            hidden_dims = critic_hidden_dims,
+            activation=activation,)
         
         # 构造使用普通的critic网络 Value function     critic
         activation_fn = get_activation(activation)

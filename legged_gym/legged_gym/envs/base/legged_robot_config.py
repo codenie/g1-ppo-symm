@@ -132,8 +132,9 @@ class LeggedRobotCfg(BaseConfig):
         lookat = [1., 1, 0.]  # [m]
 
     class sim:
-        # dt =  0.005
-        dt =  0.001
+        dt =  0.005
+        print(f"[Important Setting] dt={dt}s")
+        # dt =  0.001
 
         substeps = 1  ### zy change , orign=1
         gravity = [0., 0. ,-9.81]  # [m/s^2]

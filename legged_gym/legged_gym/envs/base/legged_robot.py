@@ -308,7 +308,7 @@ class LeggedRobot(BaseTask):
         if self.cfg.terrain.measure_heights:
             heights_obs = torch.clip(self.root_states[:, 2].unsqueeze(1) - 0.5 - self.measured_heights, -1, 1.) * self.obs_scales.height_measurements
 
-        self.critic_obs_buf = torch.cat((  self.base_lin_vel * self.obs_scales.lin_vel,
+        self.critic_obs_buf = torch.cat((  self.base_lin_vel * self.obs_scales.lin_vel, # 3 [-0, 1, 2]
                                     self.base_ang_vel  * self.obs_scales.ang_vel,
                                     self.projected_gravity,
                                     self.commands[:, :3] * self.commands_scale,
@@ -317,7 +317,7 @@ class LeggedRobot(BaseTask):
                                     self.actions, ### 27
                                     sin_phase,
                                     cos_phase,
-                                    heights_obs, ### 187
+                                    heights_obs, ### 187 = 17 * 11  # 只需要调换顺序，当前不知道坐标顺序
                                     ),dim=-1)
         
         # add perceptive inputs if not blind
@@ -852,9 +852,10 @@ class LeggedRobot(BaseTask):
         self.num_height_points = grid_x.numel()  ### 187= 17*11
         
         points = torch.zeros(self.num_envs, self.num_height_points, 3, device=self.device, requires_grad=False)
-        points[:, :, 0] = grid_x.flatten()
-        points[:, :, 1] = grid_y.flatten()
+        points[:, :, 0] = grid_x.flatten() # x 轴坐标 17
+        points[:, :, 1] = grid_y.flatten() # y 轴坐标 11
         # print("init_height_point:",points[:, :, 0])
+        ## points: (N_envs, num of points, 3), 最后一个维度, 0是x轴, 1是y轴, 2 应该是高度坐标.
         return points
 
     def _get_heights(self):
