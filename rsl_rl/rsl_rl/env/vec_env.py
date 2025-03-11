@@ -28,7 +28,7 @@
 #
 # Copyright (c) 2021 ETH Zurich, Nikita Rudin
 
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod  #抽象类模块
 import torch
 from typing import Tuple, Union
 
@@ -46,7 +46,7 @@ class VecEnv(ABC):
     episode_length_buf: torch.Tensor # current episode duration
     extras: dict
     device: torch.device
-    @abstractmethod
+    @abstractmethod   #声明是抽象方法（“纯虚函数”）
     def step(self, actions: torch.Tensor) -> Tuple[torch.Tensor, Union[torch.Tensor, None], torch.Tensor, torch.Tensor, dict]:
         pass
     @abstractmethod
@@ -56,5 +56,5 @@ class VecEnv(ABC):
     def get_observations(self) -> torch.Tensor:
         pass
     @abstractmethod
-    def get_privileged_observations(self) -> Union[torch.Tensor, None]:
+    def get_privileged_observations(self) -> Union[torch.Tensor, None]:  #union说明返回值可能是中括号里面几个类型中的一种
         pass
