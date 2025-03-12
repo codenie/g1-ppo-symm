@@ -390,7 +390,7 @@ class G1RoughCfgPPO( LeggedRobotCfgPPO ):
     class runner( LeggedRobotCfgPPO.runner ):
         policy_class_name = 'ActorCritic'
         algorithm_class_name = 'PPO'
-        save_interval = 50 # check for potential saves every this many iterations
+        save_interval = 100 # check for potential saves every this many iterations
         run_name = ''
         experiment_name = 'G1_PPO'
         max_iterations = 10000
