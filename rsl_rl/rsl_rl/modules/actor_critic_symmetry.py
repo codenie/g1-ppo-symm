@@ -105,10 +105,10 @@ class ActorCriticSymmetry(nn.Module):
         
         ## 配置actor
         actor_input_transitions = ['base_ang_vel', 'projected_gravity', 'commands', 
-                                   *('dof_pos_vel_action',)*3, 'phase'] * 5
+                                   *('dof_pos_vel_action',)*3, 'phase'] * num_history
         actor_output_transitions = ['dof_pos_vel_action']
-        self.actor_in_field_type = FieldType(gspace, [G.representations[name] for name in actor_input_transitions])
-        self.actor_out_field_type = FieldType(gspace, [G.representations[name] for name in actor_output_transitions])
+        self.actor_in_field_type = FieldType(gspace, [G.representations[name] for name in actor_input_transitions]) 
+        self.actor_out_field_type = FieldType(gspace, [G.representations[name] for name in actor_output_transitions]) 
         ## 配置critic
         critic_input_transitions = ['base_lin_vel', 'base_ang_vel', 'projected_gravity', 'commands', 
                                    *('dof_pos_vel_action',)*3, 'phase', 'heights_obs']

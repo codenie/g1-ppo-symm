@@ -75,9 +75,10 @@ class PPO:
         # for i, perm in enumerate(obs_symmetry):
         #     self.obs_sym_mat[int(abs(perm))][i] = np.sign(perm)  
 
-    def init_storage(self, num_envs, num_transitions_per_env, obs_shape, critic_obs_shape, action_shape):
+    def init_storage(self, num_envs, num_transitions_per_env, obs_shape, critic_obs_shape, action_shape, num_history):
+        """初始化storage"""
         self.storage = RolloutStorage(num_envs, num_transitions_per_env, obs_shape, \
-                                        critic_obs_shape, action_shape, \
+                                        critic_obs_shape, action_shape, num_history, \
                                         self.device)
 
     def act(self, obs, critic_obs, obs_history, base_vel):

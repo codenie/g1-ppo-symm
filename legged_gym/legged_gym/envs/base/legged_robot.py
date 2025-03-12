@@ -327,8 +327,8 @@ class LeggedRobot(BaseTask):
 
 
         ### get obs_history  ### 正数， 向后移动,  
-        self.obs_history_buf[:,:] = torch.roll(self.obs_history_buf, self.cfg.env.num_obs_step, dims=-1)
-        self.obs_history_buf[:,:self.cfg.env.num_obs_step].copy_(self.obs_buf) # TODO: 这里是不是有问题
+        self.obs_history_buf = torch.roll(self.obs_history_buf, self.cfg.env.num_obs_step, dims=-1) #TODO: 把[:,:] 删除掉有可能就能训练出来。 [重要]
+        self.obs_history_buf[:,:self.cfg.env.num_obs_step].copy_(self.obs_buf) 
 
     def create_sim(self):
         """ Creates simulation, terrain and evironments
@@ -720,7 +720,7 @@ class LeggedRobot(BaseTask):
             self.height_points = self._init_height_points()
 
         # reinit
-        self.obs_history_buf = torch.zeros(self.num_envs, self.num_obs_step*self.num_obs_history, device=self.device, dtype=torch.float)
+        self.obs_history_buf = torch.zeros(self.num_envs, self.num_obs_step*self.num_obs_history, device=self.device, dtype=torch.float, requires_grad=False)  #TODO: 本来是有梯度的.
 
 
         # initialize some data used later on

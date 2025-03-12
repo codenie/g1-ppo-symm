@@ -65,7 +65,9 @@ class OnPolicyRunner:
 
         # init storage and model
         self.alg.init_storage(self.env.num_envs, self.num_steps_per_env, \
-                        self.num_obs_step, self.num_critic_obs, self.env.num_actions)
+                        self.num_obs_step, self.num_critic_obs, self.env.num_actions, 
+                        self.num_history # history 历史长度
+                        )
 
         # Log
         self.log_dir = log_dir
