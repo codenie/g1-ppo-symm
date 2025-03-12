@@ -2,3 +2,5 @@ MorphoSymm/docs
 legged_gym/logs
 .git/
 *.pyc
+MorphoSymm/paper
+MorphoSymm/tutorials
