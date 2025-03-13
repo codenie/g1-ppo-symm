@@ -8,12 +8,13 @@ import torch
 from isaacgym import gymtorch, gymapi, gymutil
 from isaacgym.torch_utils import *
 import math
-
+import cv2
+from datetime import datetime
 
 def play(args):
     env_cfg, train_cfg = task_registry.get_cfgs(name=args.task)
     # override some parameters for testing
-    env_cfg.env.num_envs = min(env_cfg.env.num_envs, 16)
+    env_cfg.env.num_envs = min(env_cfg.env.num_envs, 1)
     env_cfg.noise.add_noise = False
     env_cfg.domain_rand.randomize_friction = False
     env_cfg.domain_rand.randomize_base_mass = False
@@ -64,13 +65,37 @@ def play(args):
     stop_state_log = 400 # number of steps before plotting states
     stop_rew_log = env.max_episode_length + 1 # number of steps before print average episode rewards
 
-    camera_position = np.array(env_cfg.viewer.pos, dtype=np.float64)
-    camera_vel = np.array([1., 1., 0.])
-    camera_direction = np.array(env_cfg.viewer.lookat) - np.array(env_cfg.viewer.pos)
+
+    #video recording
+    if RENDER:
+        camera_properties = gymapi.CameraProperties()
+        camera_properties.width = 1920
+        camera_properties.height = 1080
+        h1 = env.gym.create_camera_sensor(env.envs[0], camera_properties)
+        camera_offset = gymapi.Vec3(1, -1, 0.5)
+        camera_rotation = gymapi.Quat.from_axis_angle(gymapi.Vec3(-0.3, 0.2, 1),
+                                                    np.deg2rad(135))
+        actor_handle = env.gym.get_actor_handle(env.envs[0], 0)
+        body_handle = env.gym.get_actor_rigid_body_handle(env.envs[0], actor_handle, 0)
+        env.gym.attach_camera_to_body(
+            h1, env.envs[0], body_handle,
+            gymapi.Transform(camera_offset, camera_rotation),
+            gymapi.FOLLOW_POSITION)
+
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        video_dir = os.path.join(LEGGED_GYM_ROOT_DIR, 'videos')
+        experiment_dir = os.path.join(LEGGED_GYM_ROOT_DIR, 'videos', train_cfg.runner.experiment_name)
+        args.run_name = "g1"
+        dir = os.path.join(experiment_dir, datetime.now().strftime('%b%d_%H-%M-%S')+ args.run_name + '.mp4')
+        if not os.path.exists(video_dir):
+            os.mkdir(video_dir)
+        if not os.path.exists(experiment_dir):
+            os.mkdir(experiment_dir)
+        video = cv2.VideoWriter(dir, fourcc, 50.0, (1920, 1080))
         
 
     for i in range(10*int(env.max_episode_length)): ### 10 * 20s
-        actions = policy(obs.detach(), obs_history.detach())
+        actions = policy(obs.detach(), obs_history.detach())   #original Dreamwaq policy can output a linear velocity estimation
         obs, _, rews, dones, infos = env.step(actions.detach())
         obs_history, base_vel = env.get_extra_info()
 
@@ -79,7 +104,7 @@ def play(args):
             logger.log_states(
                 {
 
-                    # 'base_vel_est':base_vel_est[robot_index,:].detach().cpu().numpy(),
+                    #'base_vel_est':base_vel_est[robot_index,:].detach().cpu().numpy(),
                     # 'base_height_est':base_height_est[robot_index,:].detach().cpu().numpy(),
 
 
@@ -119,7 +144,22 @@ def play(args):
         elif i==stop_rew_log:
             logger.print_rewards()
 
+        #video recording
+        if RENDER:
+            env.gym.fetch_results(env.sim, True)
+            env.gym.step_graphics(env.sim)
+            env.gym.render_all_camera_sensors(env.sim)
+            img = env.gym.get_camera_image(env.sim, env.envs[0], h1, gymapi.IMAGE_COLOR)
+            img = np.reshape(img, (1080, 1920, 4))
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            video.write(img[..., :3])
+    if RENDER:
+        video.release()
+        
+        
+
 if __name__ == '__main__':
+    RENDER = True
     EXPORT_POLICY = False
     RECORD_FRAMES = False
     MOVE_CAMERA = False

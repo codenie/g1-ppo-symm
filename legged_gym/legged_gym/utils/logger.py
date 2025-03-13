@@ -179,26 +179,26 @@ class Logger:
 
 
         base_vel = np.array(log['base_vel'])
-        base_vel_est = np.array(log['base_vel_est'])
+        # base_vel_est = np.array(log['base_vel_est'])
         commands = np.array(log['commands'])
         base_ang_vel = np.array(log['base_ang_vel'])
         fig_base_vel = plt.figure()
         axs = fig_base_vel.subplots(2, 2)
         a = axs[0, 0]
         a.plot(time, base_vel[:,0], label='base_vel_x')
-        a.plot(time, base_vel_est[:,0], label='base_vel_x_est')
+        # a.plot(time, base_vel_est[:,0], label='base_vel_x_est')
         a.plot(time, commands[:,0], label='cmd')
         a.set(xlabel='time [s]')
         a.legend() 
         a = axs[0, 1]
         a.plot(time, base_vel[:,1], label='base_vel_y')
-        a.plot(time, base_vel_est[:,1], label='base_vel_y_est')
+        # a.plot(time, base_vel_est[:,1], label='base_vel_y_est')
         a.plot(time, commands[:,1], label='cmd')
         a.set(xlabel='time [s]')
         a.legend() 
         a = axs[1, 0]
         a.plot(time, base_vel[:,2], label='base_vel_z')
-        a.plot(time, base_vel_est[:,2], label='base_vel_z_est')
+        # a.plot(time, base_vel_est[:,2], label='base_vel_z_est')
         a.set(xlabel='time [s]')
         a.legend() 
         a = axs[1, 1]
