@@ -376,7 +376,7 @@ class G1RoughCfgPPO( LeggedRobotCfgPPO ):
         value_loss_coef = 1.0
         use_clipped_value_loss = True
         clip_param = 0.2 ### normal
-        entropy_coef = 0.001 ### normal
+        entropy_coef = 1e-3 ### normal # 原始为1e-3
 
         num_learning_epochs = 5 ## normal
         num_mini_batches = 4 # mini batch size = num_envs*nsteps / nminibatches
@@ -419,7 +419,7 @@ class G1RoughCfgPPOEMLP( LeggedRobotCfgPPO ):
         value_loss_coef = 1.0
         use_clipped_value_loss = True
         clip_param = 0.2 ### normal
-        entropy_coef = 0.001 ### normal
+        entropy_coef = 1e-3 ### normal  # 原始为1e-3
 
         num_learning_epochs = 5 ## normal
         num_mini_batches = 4 # mini batch size = num_envs*nsteps / nminibatches
