@@ -91,6 +91,7 @@ def play(args):
             os.mkdir(video_dir)
         if not os.path.exists(experiment_dir):
             os.mkdir(experiment_dir)
+        print(f"The video will be saved to dir = {dir}")
         video = cv2.VideoWriter(dir, fourcc, 50.0, (1920, 1080))
         
 

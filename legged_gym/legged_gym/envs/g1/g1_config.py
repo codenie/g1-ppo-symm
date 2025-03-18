@@ -59,7 +59,7 @@ class G1RoughCfg( LeggedRobotCfg ):
         measured_points_x = [-0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8] # mun=17 1mx1.6m rectangle (without center line)
         measured_points_y = [-0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5] ### num=11
         
-        curriculum = False
+        curriculum = True
         selected = False # select a unique terrain type and pass all arguments
         terrain_kwargs = None # Dict of arguments for selected terrain
         max_init_terrain_level = 5 # starting curriculum state
@@ -292,25 +292,26 @@ class G1RoughCfg( LeggedRobotCfg ):
             base_height = -1.0  ## -10.0
             # dof_acc = -2.5e-7  ### -2.5e-7
             # dof_vel = -1e-5   ### -1e-3
-            # action_rate = -1e-2  ### -0.005
-            # action_smoothness  = -1e-2              
+            action_rate = -5e-3  ### -0.005
+            action_smoothness  = -1e-2              
 
             dof_pos_limits = -10.0 ### -5.0
             # dof_vel_limits = -0.1
-            # torque_limits = -1.0 
+            torque_limits = -1.0 
 
             # feet_contact_forces = -5e-4  ### 1e-3
             # contact_no_vel = -0.1  ## -0.2
 
-            # torques = -6e-7
-            # feet_contact_slip = -0.1
+            torques = -6e-7
+            #feet_contact_slip = -0.1
+            feet_distance = -0.01
 
             # collision = -5.0
 
             feet_swing_height = -20.0  # -20.0
 
             # contact = 1.0 
-            # contact = 0.1 
+            contact = 1.0  #TODO 这个值可能要更改
 
 
             hip_pos = -1.0  ### -1.0
@@ -376,7 +377,7 @@ class G1RoughCfgPPO( LeggedRobotCfgPPO ):
         value_loss_coef = 1.0
         use_clipped_value_loss = True
         clip_param = 0.2 ### normal
-        entropy_coef = 1e-3 ### normal # 原始为1e-3
+        entropy_coef = 1e-5 ### normal # 原始为1e-3
 
         num_learning_epochs = 5 ## normal
         num_mini_batches = 4 # mini batch size = num_envs*nsteps / nminibatches
@@ -390,7 +391,7 @@ class G1RoughCfgPPO( LeggedRobotCfgPPO ):
     class runner( LeggedRobotCfgPPO.runner ):
         policy_class_name = 'ActorCritic'
         algorithm_class_name = 'PPO'
-        save_interval = 100 # check for potential saves every this many iterations
+        save_interval = 50 # check for potential saves every this many iterations
         run_name = ''
         experiment_name = 'G1_PPO'
         max_iterations = 10000
@@ -409,7 +410,7 @@ class G1RoughCfgPPOEMLP( LeggedRobotCfgPPO ):
     seed = -1
     runner_class_name = 'OnPolicyRunner'
     class policy:
-        init_noise_std = 0.8
+        init_noise_std = 0.5
         actor_hidden_dims = [512, 256, 128]
         critic_hidden_dims = [512, 256, 128]
         activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
@@ -419,7 +420,7 @@ class G1RoughCfgPPOEMLP( LeggedRobotCfgPPO ):
         value_loss_coef = 1.0
         use_clipped_value_loss = True
         clip_param = 0.2 ### normal
-        entropy_coef = 1e-3 ### normal  # 原始为1e-3
+        entropy_coef = 1e-5 ### normal  # 原始为1e-3
 
         num_learning_epochs = 5 ## normal
         num_mini_batches = 4 # mini batch size = num_envs*nsteps / nminibatches
@@ -433,7 +434,7 @@ class G1RoughCfgPPOEMLP( LeggedRobotCfgPPO ):
     class runner( LeggedRobotCfgPPO.runner ):
         policy_class_name = 'ActorCriticSymmetry'
         algorithm_class_name = 'PPO'
-        save_interval = 100 # check for potential saves every this many iterations # TODO:
+        save_interval = 50 # check for potential saves every this many iterations # TODO:
         run_name = ''
         experiment_name = 'G1_PPO_EMLP'
         max_iterations = 10000
@@ -446,8 +447,3 @@ class G1RoughCfgPPOEMLP( LeggedRobotCfgPPO ):
         resume = False
         load_run = 'play'
         checkpoint = 1000
- 
-
-
-        
- 
