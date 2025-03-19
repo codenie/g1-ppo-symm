@@ -4,3 +4,6 @@ legged_gym/logs
 *.pyc
 MorphoSymm/paper
 MorphoSymm/tutorials
+legged_gym/videos
+*.zip
+*tar.gz

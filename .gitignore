@@ -181,3 +181,6 @@ legged_gym/logs
 
 MorphoSymm/morpho_symm/experiments/
 ./sync/
+
+*.zip
+*.gz

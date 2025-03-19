@@ -304,7 +304,7 @@ class G1RoughCfg( LeggedRobotCfg ):
 
             torques = -6e-7
             #feet_contact_slip = -0.1
-            feet_distance = -0.01
+            feet_distance = -0.01   # 这个影响足间距 原始 0.01
 
             # collision = -5.0
 
@@ -367,7 +367,7 @@ class G1RoughCfgPPO( LeggedRobotCfgPPO ):
     seed = -1
     runner_class_name = 'OnPolicyRunner'
     class policy:
-        init_noise_std = 0.8
+        init_noise_std = 0.5
         actor_hidden_dims = [512, 256, 128]
         critic_hidden_dims = [512, 256, 128]
         activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
