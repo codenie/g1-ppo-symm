@@ -305,6 +305,7 @@ class G1RoughCfg( LeggedRobotCfg ):
             torques = -6e-7
             #feet_contact_slip = -0.1
             feet_distance = -0.01
+            default_gap = 0.240
 
             # collision = -5.0
 
