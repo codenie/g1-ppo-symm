@@ -1166,7 +1166,7 @@ class LeggedRobot(BaseTask):
         return torch.sum(torch.square(self.dof_pos[:,[1,7]]), dim=1)
     
     def _reward_feet_distance(self):
-        distance_error = torch.abs((self.feet_pos_in_body_frame[:,0,1] - self.feet_pos_in_body_frame[:,1,1]) - 0.284) ##0.284
+        distance_error = torch.abs((self.feet_pos_in_body_frame[:,0,1] - self.feet_pos_in_body_frame[:,1,1]) - self.cfg.rewards.default_gap) ##0.284
         return distance_error
     
     def _reward_not_fly(self):

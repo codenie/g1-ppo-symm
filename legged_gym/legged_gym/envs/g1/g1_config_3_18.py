@@ -278,6 +278,7 @@ class G1RoughCfg( LeggedRobotCfg ):
         base_height_target = 0.70 ### TODO
         tracking_sigma = 0.25
         max_contact_force = 400. # forces above this value are penalized
+        default_gap = 0.240
         class scales( LeggedRobotCfg.rewards.scales ):
 
             tracking_lin_vel = 2.0
@@ -305,6 +306,7 @@ class G1RoughCfg( LeggedRobotCfg ):
             torques = -6e-7
             #feet_contact_slip = -0.1
             feet_distance = -0.01
+ 
 
             # collision = -5.0
 
