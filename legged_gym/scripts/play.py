@@ -131,11 +131,19 @@ def play(args):
                     'base_vel': env.base_lin_vel[robot_index, :3].detach().cpu().numpy(),
                     'base_ang_vel': env.base_ang_vel[robot_index, :3].detach().cpu().numpy(),
 
+                    'feet_pos': env.feet_pos[robot_index, :].detach().cpu().numpy(),
+                    'feet_vel': env.feet_vel[robot_index, :].detach().cpu().numpy(),
+                    'contact_force': env.contact_forces[robot_index, :].detach().cpu().numpy(),
 
                 }
             )
         elif i==stop_state_log:
             logger.plot_states()
+            # 定义保存路径（可以是绝对路径或相对路径）
+            save_path = f"/home/jinrongjun/g1-ppo-symm-main/legged_gym/logs/G1_PPO_EMLP/play_data/{datetime.now().strftime('%b%d_%H-%M-%S')}_state_log.npy"  # 替换为你的目标路
+            # 保存 state_log 到指定路径
+            np.save(save_path, logger.state_log)
+
         if  0 < i < stop_rew_log:
             if infos["episode"]:
                 num_episodes = torch.sum(env.reset_buf).item() ### num  traj
