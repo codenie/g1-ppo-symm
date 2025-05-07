@@ -280,7 +280,7 @@ class G1RoughCfg( LeggedRobotCfg ):
         tracking_sigma = 0.25
         max_contact_force = 400. # forces above this value are penalized
         
-        default_gap = 0.240 # 足间距
+        default_gap = 0.260 # 足间距
         
         class scales( LeggedRobotCfg.rewards.scales ):
 
@@ -371,7 +371,7 @@ class G1RoughCfgPPO( LeggedRobotCfgPPO ):
     seed = -1
     runner_class_name = 'OnPolicyRunner'
     class policy:
-        init_noise_std = 1.0
+        init_noise_std = 0.5
         actor_hidden_dims = [512, 256, 128]
         critic_hidden_dims = [512, 256, 128]
         activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
@@ -414,7 +414,7 @@ class G1RoughCfgPPOEMLP( LeggedRobotCfgPPO ):
     seed = -1
     runner_class_name = 'OnPolicyRunner'
     class policy:
-        init_noise_std = 1.0
+        init_noise_std = 0.5
         actor_hidden_dims = [512, 256, 128]
         critic_hidden_dims = [512, 256, 128]
         activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid

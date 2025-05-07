@@ -15,6 +15,9 @@ def play(args):
     env_cfg, train_cfg = task_registry.get_cfgs(name=args.task)
     # override some parameters for testing
     env_cfg.env.num_envs = min(env_cfg.env.num_envs, 1)
+    ## 
+    env_cfg.env.num_obs_history = 5
+    
     env_cfg.noise.add_noise = False
     env_cfg.domain_rand.randomize_friction = False
     env_cfg.domain_rand.randomize_base_mass = False
@@ -85,8 +88,9 @@ def play(args):
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         video_dir = os.path.join(LEGGED_GYM_ROOT_DIR, 'videos')
         experiment_dir = os.path.join(LEGGED_GYM_ROOT_DIR, 'videos', train_cfg.runner.experiment_name)
-        args.run_name = "g1"
-        dir = os.path.join(experiment_dir, datetime.now().strftime('%b%d_%H-%M-%S')+ args.run_name + '.mp4')
+        
+        dir = os.path.join(experiment_dir, f"{datetime.now().strftime('%b%d_%H-%M-%S')}_{args.task}_{args.load_run}_{args.checkpoint}_.mp4")
+        
         if not os.path.exists(video_dir):
             os.mkdir(video_dir)
         if not os.path.exists(experiment_dir):

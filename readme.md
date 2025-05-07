@@ -21,6 +21,8 @@ pip install -e .
 
 注意MorphoSymm库比较特殊，依赖pinocchio，会使用pip自动安装，如果出错可以使用conda等手动安装。
 
+## TODO
+- 写一个收集policy权重文件.pth的脚本；一键把需要的.pth文件都复制到一个目录下打包，方便上真机测试
 
 ## 文件结构
 - legged_gym: g1的训练环境定义

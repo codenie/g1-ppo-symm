@@ -1133,6 +1133,8 @@ class LeggedRobot(BaseTask):
         return torch.sum((torch.norm(self.contact_forces[:, self.feet_indices, :], dim=-1) -  self.cfg.rewards.max_contact_force).clip(min=0.), dim=1)
 
     def _reward_contact(self):
+        ## TODO: 当前写法：phase认为应该触地就鼓励触地。phase认为应该抬腿就鼓励抬腿。这种做法会导致机器人无法站立不动, 即command=0时机器人也要不断踏步
+        ## 对应可能的修改方案，仅在phase认为触地时鼓励触地，其他时刻不给reward/penalty
         res = torch.zeros(self.num_envs, dtype=torch.float, device=self.device)
         for i in range(self.feet_num):
             is_stance = self.leg_phase[:, i] < 0.5

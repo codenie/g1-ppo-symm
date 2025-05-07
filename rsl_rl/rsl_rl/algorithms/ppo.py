@@ -189,6 +189,8 @@ class PPO:
                                 param_group['lr'] = self.learning_rate
                             elif param_group['params'] == self.actor_critic.std:
                                 param_group['lr'] = self.learning_rate
+                # elif self.schedule == 'decay':
+                #     pass
 
                 # Surrogate loss
                 ratio = torch.exp(actions_log_prob_batch - torch.squeeze(old_actions_log_prob_batch))
