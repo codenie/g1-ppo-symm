@@ -28,33 +28,8 @@
 #
 # Copyright (c) 2021 ETH Zurich, Nikita Rudin
 
-from abc import ABC, abstractmethod  #抽象类模块
-import torch
-from typing import Tuple, Union
-
-# minimal interface of the environment
-class VecEnv(ABC):
-    num_envs: int
-    num_obs: int
-    num_privileged_obs: int
-    num_actions: int
-    max_episode_length: int
-    privileged_obs_buf: torch.Tensor
-    obs_buf: torch.Tensor 
-    rew_buf: torch.Tensor
-    reset_buf: torch.Tensor
-    episode_length_buf: torch.Tensor # current episode duration
-    extras: dict
-    device: torch.device
-    @abstractmethod   #声明是抽象方法（“纯虚函数”）
-    def step(self, actions: torch.Tensor) -> Tuple[torch.Tensor, Union[torch.Tensor, None], torch.Tensor, torch.Tensor, dict]:
-        pass
-    @abstractmethod
-    def reset(self, env_ids: Union[list, torch.Tensor]):
-        pass
-    @abstractmethod
-    def get_observations(self) -> torch.Tensor:
-        pass
-    @abstractmethod
-    def get_privileged_observations(self) -> Union[torch.Tensor, None]:  #union说明返回值可能是中括号里面几个类型中的一种
-        pass
+from .helpers import class_to_dict, get_load_path, get_args, export_policy_as_jit, set_seed, update_class_from_dict
+from .task_registry import task_registry
+from .logger import Logger
+from .math import *
+from .terrain import Terrain

@@ -28,33 +28,29 @@
 #
 # Copyright (c) 2021 ETH Zurich, Nikita Rudin
 
-from abc import ABC, abstractmethod  #抽象类模块
-import torch
-from typing import Tuple, Union
+import numpy as np
+import os
+from datetime import datetime
 
-# minimal interface of the environment
-class VecEnv(ABC):
-    num_envs: int
-    num_obs: int
-    num_privileged_obs: int
-    num_actions: int
-    max_episode_length: int
-    privileged_obs_buf: torch.Tensor
-    obs_buf: torch.Tensor 
-    rew_buf: torch.Tensor
-    reset_buf: torch.Tensor
-    episode_length_buf: torch.Tensor # current episode duration
-    extras: dict
-    device: torch.device
-    @abstractmethod   #声明是抽象方法（“纯虚函数”）
-    def step(self, actions: torch.Tensor) -> Tuple[torch.Tensor, Union[torch.Tensor, None], torch.Tensor, torch.Tensor, dict]:
-        pass
-    @abstractmethod
-    def reset(self, env_ids: Union[list, torch.Tensor]):
-        pass
-    @abstractmethod
-    def get_observations(self) -> torch.Tensor:
-        pass
-    @abstractmethod
-    def get_privileged_observations(self) -> Union[torch.Tensor, None]:  #union说明返回值可能是中括号里面几个类型中的一种
-        pass
+import isaacgym
+from legged_gym.envs import *
+from legged_gym.utils import  get_args, export_policy_as_jit, task_registry, Logger
+
+import torch
+
+
+def test_env(args):
+    env_cfg, train_cfg = task_registry.get_cfgs(name=args.task)
+    # override some parameters for testing
+    env_cfg.env.num_envs =  min(env_cfg.env.num_envs, 10)
+
+    # prepare environment
+    env, _ = task_registry.make_env(name=args.task, args=args, env_cfg=env_cfg)
+    for i in range(int(10*env.max_episode_length)):
+        actions = 0.*torch.ones(env.num_envs, env.num_actions, device=env.device)
+        obs, _, rew, done, info = env.step(actions)
+    print("Done")
+
+if __name__ == '__main__':
+    args = get_args()
+    test_env(args)
