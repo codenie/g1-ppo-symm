@@ -11,6 +11,8 @@ import escnn.group
 from escnn.group import CyclicGroup
 from rsl_rl.utils.symm_utils import add_repr_to_gspace, SimpleEMLP, get_symm_tensor, G, representations_action, representations, representations_crtic
 
+# PPO w/o loss update for VAE
+
 class PPO:
     actor_critic: ActorCritic
     def __init__(self,
@@ -62,10 +64,9 @@ class PPO:
                 {'params':self.actor_critic.std, 'lr':learning_rate},])
    
 
-        
-        ###  vae_optimizer  
-        self.num_vae_substeps = 1     
-        self.vae_optimizer = torch.optim.Adam(self.actor_critic.vae.parameters(), lr=1e-3)
+        self.num_vae_substeps = 1
+        ###  vae_optimizer       
+        # self.vae_optimizer = torch.optim.Adam(self.actor_critic.vae.parameters(), lr=1e-3)
 
 
         self.transition = RolloutStorage.Transition()
@@ -246,24 +247,23 @@ class PPO:
                 # mean_symmetry_loss += sym_loss.item()
 
 
-                for epoch in range(self.num_vae_substeps):
-                    #! 需要 next obs
-                    #! 通过 dones 来隔断训练 
-                    # TODO : PREDICT THE VEL :vae_loss_dict = self.actor_critic.vae.loss_fn(obs_history_batch, next_obs_batch, base_vel_batch, 1.0)
-                    vae_loss_dict = self.actor_critic.vae.loss_fn(obs_history_batch, next_obs_batch, 1.0)
-                    valid = (dones_batch == 0).squeeze()
-                    vae_loss = torch.mean(vae_loss_dict['loss'][valid])
-                    self.vae_optimizer.zero_grad()
-                    vae_loss.backward()
-                    nn.utils.clip_grad_norm_(self.actor_critic.vae.parameters(), self.max_grad_norm)
-                    self.vae_optimizer.step()
-                    with torch.no_grad():
-                        recons_loss = torch.mean(vae_loss_dict['recons_loss'][valid])
-                        kld_loss = torch.mean(vae_loss_dict['kld_loss'][valid])
-                        # vel_loss = torch.mean(vae_loss_dict['vel_loss'][valid])
-                    mean_recons_loss += recons_loss.item()
-                    # mean_vel_loss += vel_loss.item()
-                    mean_kld_loss += kld_loss.item()
+                # for epoch in range(self.num_vae_substeps):
+                #     #! 需要 next obs
+                #     #! 通过 dones 来隔断训练 
+                #     vae_loss_dict = self.actor_critic.vae.loss_fn(obs_history_batch, next_obs_batch, base_vel_batch, 1.0)
+                #     valid = (dones_batch == 0).squeeze()
+                #     vae_loss = torch.mean(vae_loss_dict['loss'][valid])
+                #     self.vae_optimizer.zero_grad()
+                #     vae_loss.backward()
+                #     nn.utils.clip_grad_norm_(self.actor_critic.vae.parameters(), self.max_grad_norm)
+                #     self.vae_optimizer.step()
+                #     with torch.no_grad():
+                #         recons_loss = torch.mean(vae_loss_dict['recons_loss'][valid])
+                #         kld_loss = torch.mean(vae_loss_dict['kld_loss'][valid])
+                #         vel_loss = torch.mean(vae_loss_dict['vel_loss'][valid])
+                #     mean_recons_loss += recons_loss.item()
+                #     mean_vel_loss += vel_loss.item()
+                #     mean_kld_loss += kld_loss.item()
 
 
         num_updates = self.num_learning_epochs * self.num_mini_batches

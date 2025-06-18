@@ -1,0 +1,9 @@
+1. when train
+conda activate isaac
+cd /home/jinrongjun/g1-ppo-symm-main/legged_gym/legged_gym
+python scripts/train.py --task=g1-emlp --load_run=./play --checkpoint=2800 --headless --run_name=emlp_retrain2800_withTerrain
+
+2. when play
+conda activate isaac
+cd /home/jinrongjun/g1-ppo-symm-main/legged_gym/legged_gym/
+python scripts/play.py --task=g1-emlp 

@@ -23,9 +23,10 @@ class RolloutStorage:
             self.__init__()
 
     def __init__(self, num_envs, num_transitions_per_env, obs_shape, critic_obs_shape,\
-                            actions_shape, device='cpu'):
+                            actions_shape, num_history=1, device='cpu'):
         
         self.device = device
+        self.num_history = num_history
 
         # For PPO
         self.observations = torch.zeros(num_transitions_per_env, num_envs, obs_shape, device=self.device)
@@ -45,8 +46,9 @@ class RolloutStorage:
 
 ### --------------  vae ---------------------
         self.dones = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device).byte()
+        # 这里的 observation_histories 初始化时要考虑到history的长度为一个超参数，大小根据config文件指定
         self.observation_histories = \
-                torch.zeros(num_transitions_per_env, num_envs, obs_shape*5, device=self.device)
+                torch.zeros(num_transitions_per_env, num_envs, obs_shape*self.num_history, device=self.device) 
         self.base_vel = torch.zeros(num_transitions_per_env, num_envs, 3, device=self.device)
         self.next_observations = \
                 torch.zeros(num_transitions_per_env, num_envs, obs_shape, device=self.device)

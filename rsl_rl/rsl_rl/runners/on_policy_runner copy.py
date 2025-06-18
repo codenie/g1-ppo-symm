@@ -9,18 +9,18 @@ import torch
 import torch.nn as nn
 
 from rsl_rl.algorithms import PPO
-from rsl_rl.modules import ActorCritic, ActorCriticSymmetry, ActorCriticHalfSymmetry, ActorCriticSymmetryVae
+from rsl_rl.modules import ActorCritic, ActorCriticSymmetry
 from rsl_rl.env import VecEnv
 from legged_gym.utils.helpers import get_load_path
 from legged_gym import LEGGED_GYM_ROOT_DIR, LEGGED_GYM_ENVS_DIR
+
+# from rsl_rl.modules import AttackerActorCritic
 
 from rsl_rl.utils.torch_utils import preserve_training_state
 
 actor_critic_cls_dict = {
     'ActorCritic': ActorCritic,
     'ActorCriticSymmetry': ActorCriticSymmetry,
-    'ActorCriticHalfSymmetry': ActorCriticHalfSymmetry,
-    'ActorCriticSymmetryVae': ActorCriticSymmetryVae
 }
 
 class OnPolicyRunner:
@@ -38,38 +38,34 @@ class OnPolicyRunner:
         self.device = device
         self.env = env
 
-        self.num_vae_encoder_output = 36 # 该参数不应该在PPO中使用.
+        self.num_vae_encoder_output = 36
         self.num_obs_step = env.num_obs_step
         self.num_critic_obs = env.num_critic_obs
         self.num_history = env.num_obs_history
-        
+
         assert self.cfg["policy_class_name"] in actor_critic_cls_dict, "ActorCritic类型不在可用列表中"
         
         actor_critic: ActorCritic = actor_critic_cls_dict[self.cfg["policy_class_name"]](
-                                                num_vae=self.num_vae_encoder_output,
-                                                num_obs_step=self.num_obs_step,
-                                                num_critic_obs=self.num_critic_obs,
-                                                num_history= self.num_history,
-                                                num_actions=self.env.num_actions,
-                                                actor_hidden_dims=self.policy_cfg["actor_hidden_dims"],
-                                                critic_hidden_dims=self.policy_cfg["critic_hidden_dims"],
-                                                activation='elu',
-                                                init_noise_std=self.policy_cfg["init_noise_std"]
+                                                 num_vae=self.num_vae_encoder_output,
+                                                 num_obs_step=self.num_obs_step,
+                                                 num_critic_obs=self.num_critic_obs,
+                                                 num_history= self.num_history,
+                                                 num_actions=self.env.num_actions,
+                                                 actor_hidden_dims=self.policy_cfg["actor_hidden_dims"],
+                                                 critic_hidden_dims=self.policy_cfg["critic_hidden_dims"],
+                                                 activation='elu',
+                                                 init_noise_std=self.policy_cfg["init_noise_std"]
                                                 ).to(self.device)
 
-        # 指定使用PPO
-        # print(f"[INFO] 指定使用PPO algorithm.")
-        assert self.cfg["algorithm_class_name"] == 'PPO', "指定使用PPO, 而当前设置没有使用该算法."
-        self.alg: PPO = PPO(actor_critic, device=self.device, **self.alg_cfg)
+        self.alg: PPO = PPO(actor_critic, \
+                            device=self.device, **self.alg_cfg)
         
         self.num_steps_per_env = self.cfg["num_steps_per_env"]
         self.save_interval = self.cfg["save_interval"]
 
         # init storage and model
         self.alg.init_storage(self.env.num_envs, self.num_steps_per_env, \
-                        self.num_obs_step, self.num_critic_obs, self.env.num_actions, 
-                        self.num_history # history 历史长度
-                        )
+                        self.num_obs_step, self.num_critic_obs, self.env.num_actions)
 
         # Log
         self.log_dir = log_dir
@@ -80,13 +76,12 @@ class OnPolicyRunner:
         
         _, _= self.env.reset() 
         
-        if self.cfg["resume"] == True:
-            log_root = os.path.join(LEGGED_GYM_ROOT_DIR, 'logs', self.cfg['experiment_name'])
-            resume_path = get_load_path(log_root, load_run=self.cfg['load_run'], checkpoint= self.cfg['checkpoint']) #"/home/jinrongjun/g1-ppo-symm-main/legged_gym/logs/G1_PPO_EMLP/play/model_4300.pt" 
-            print(f"Loading model from: {resume_path}")
-            self.load(resume_path)
-        self.current_learning_iteration = 0
-        
+        # log_root = os.path.join(LEGGED_GYM_ROOT_DIR, 'logs', self.cfg['experiment_name'])
+        # resume_path = get_load_path(log_root, load_run=self.cfg['retrain_load_run'], checkpoint= self.cfg['retrain_checkpoint'])
+        # print(f"Loading model from: {resume_path}")
+        # self.load(resume_path)
+        # self.current_learning_iteration = 0
+
 
     def learn(self, num_learning_iterations, init_at_random_ep_len=False):
         # initialize writer
@@ -98,11 +93,9 @@ class OnPolicyRunner:
 
         obs, critic_obs = self.env.get_observations()
         obs_history, base_vel = self.env.get_extra_info()
-
         # obs, critic_obs = obs.to(self.device), critic_obs.to(self.device)
         self.alg.actor_critic.train() # switch to train mode (for dropout for example)
-        
-        
+ 
         ep_infos = []
         rewbuffer = deque(maxlen=100)
         lenbuffer = deque(maxlen=100)
@@ -111,20 +104,32 @@ class OnPolicyRunner:
 
         tot_iter = self.current_learning_iteration + num_learning_iterations
         for it in range(self.current_learning_iteration, tot_iter):
-            # self.alg.actor_critic.train() # switch to train mode (for dropout for example)
             start = time.time()
             # Rollout
             with torch.inference_mode():
                 for i in range(self.num_steps_per_env):
-
+                    
+                    # # TODO: 检查储存的信息
+                    # if torch.all(obs == obs_history[:, :332]) == False:
+                    #     print("[warning] Save obs != obs_history[:, :332]")
+                    # else:
+                    #     print("Save transitions Okay.")
+                    #     pass
                     actions = self.alg.act(obs, critic_obs, obs_history, base_vel)
                     obs, critic_obs, rewards, dones, infos = self.env.step(actions)  
-
+                    # obs_history, base_vel = self.env.get_extra_info()
                     obs_history, base_vel = self.env.get_extra_info()
+                    
                     # obs, critic_obs = obs.to(self.device), critic_obs.to(self.device)
-        
-                    self.alg.process_env_step(rewards, dones, infos, obs)
-
+                    
+                    # # TODO: 检查储存的信息
+                    # if torch.all(obs == obs_history[:, :332]) == False:
+                    #     print("[warning] Save obs != obs_history[:, :332]")
+                    # else:
+                    #     print("Save transitions Okay.")
+                    #     # pass
+                    
+                    self.alg.process_env_step(rewards, dones, infos, obs) # 这里的obs对应transition中的next_obs
                     
                     if self.log_dir is not None:
                         # Book keeping
@@ -139,7 +144,7 @@ class OnPolicyRunner:
                         lenbuffer.extend(cur_episode_length[new_ids][:, 0].cpu().numpy().tolist())
                         cur_reward_sum[new_ids] = 0
                         cur_episode_length[new_ids] = 0
-
+                
                 stop = time.time()
                 collection_time = stop - start
 
@@ -150,7 +155,6 @@ class OnPolicyRunner:
                 
             mean_value_loss, mean_surrogate_loss, mean_entropy_loss, mean_symmetry_loss,\
                 mean_recons_loss, mean_vel_loss, mean_kld_loss = self.alg.update()
-
                 
             stop = time.time()
             learn_time = stop - start
@@ -163,8 +167,6 @@ class OnPolicyRunner:
         
         self.current_learning_iteration += num_learning_iterations
         self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(self.current_learning_iteration)))
-
-
 
 
     def log(self, locs, width=80, pad=35):
@@ -206,7 +208,6 @@ class OnPolicyRunner:
         if len(locs['rewbuffer']) > 0:
             self.writer.add_scalar('Train/mean_reward', statistics.mean(locs['rewbuffer']), locs['it'])
             self.writer.add_scalar('Train/mean_episode_length', statistics.mean(locs['lenbuffer']), locs['it'])
-
 
 
         str = f" \033[1m Learning iteration {locs['it']}/{self.current_learning_iteration + locs['num_learning_iterations']} \033[0m "
@@ -285,6 +286,22 @@ class OnPolicyRunner:
             #     self.alg.actor_critic.std.copy_(torch.ones_like(self.alg.actor_critic.std)*0.2)
 
         return loaded_dict['infos']
+    
+    # def save(self, path, infos=None):
+    #     torch.save({
+    #         'model_state_dict': self.alg.actor_critic.state_dict(),
+    #         'optimizer_state_dict': self.alg.optimizer.state_dict(),
+    #         'iter': self.current_learning_iteration,
+    #         'infos': infos,
+    #         }, path)
+
+    # def load(self, path, load_optimizer=True):
+    #     loaded_dict = torch.load(path)
+    #     self.alg.actor_critic.load_state_dict(loaded_dict['model_state_dict'])
+    #     if load_optimizer:
+    #         self.alg.optimizer.load_state_dict(loaded_dict['optimizer_state_dict'])
+    #     self.current_learning_iteration = loaded_dict['iter']
+    #     return loaded_dict['infos']
 
     def get_inference_policy(self, device=None):
         self.alg.actor_critic.eval() # switch to evaluation mode (dropout for example)
@@ -294,6 +311,24 @@ class OnPolicyRunner:
 
 
 
+    # def attacker_save(self, path, infos=None):
+    #     torch.save({
+    #         'model_state_dict': self.alg.attacker_ac.state_dict(),
+    #         'optimizer_state_dict': self.alg.attacker_optimizer.state_dict(),
+    #         'iter': self.current_learning_iteration,
+    #         'infos': infos,
+    #         }, path)
 
+    # def attacker_load(self, path, load_optimizer=True):
+    #     loaded_dict = torch.load(path)
+    #     self.alg.attacker_ac.load_state_dict(loaded_dict['model_state_dict'])
+    #     if load_optimizer:
+    #         self.alg.attacker_optimizer.load_state_dict(loaded_dict['optimizer_state_dict'])
+    #     self.current_learning_iteration = loaded_dict['iter']
+    #     return loaded_dict['infos']
 
-
+    # def attacker_get_inference_policy(self, device=None):
+    #     self.alg.attacker_ac.eval() # switch to evaluation mode (dropout for example)
+    #     if device is not None:
+    #         self.alg.attacker_ac.to(device)
+    #     return self.alg.attacker_ac.act_inference

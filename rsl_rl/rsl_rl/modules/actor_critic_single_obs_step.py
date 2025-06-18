@@ -26,9 +26,7 @@ class ActorCritic(nn.Module):
 
         ### actor,  critic ---------------------
         # mlp_input_dim_a = num_obs_step + num_vae
-        mlp_input_dim_a = num_obs_step * num_history
-        
-        print(f"[info] num_history={num_history}")
+        mlp_input_dim_a = num_obs_step
         
         mlp_input_dim_c = num_critic_obs
 
@@ -101,7 +99,7 @@ class ActorCritic(nn.Module):
     def act(self, obs,  obs_history):
         # vel_est, latent = self.vae.sample(obs_history)
         # actor_obs = torch.cat((vel_est, latent, obs), dim = -1)
-        self.update_distribution(obs_history)
+        self.update_distribution(obs)
         return self.distribution.sample()
    
 
@@ -111,7 +109,7 @@ class ActorCritic(nn.Module):
     def act_inference(self, obs, obs_history):
         # vel_est, latent = self.vae.inference(obs_history)
         # actor_obs = torch.cat((vel_est, latent, obs), dim = -1)
-        actions_mean = self.actor(obs_history)
+        actions_mean = self.actor(obs)
         return actions_mean
     
     

@@ -162,61 +162,74 @@ def get_symm_tensor(data:torch.Tensor, G:escnn.group.Group, reprs:List[str])->to
     # 返回结果
     return torch.concat(res, dim=-1)
 
-                  
+
+
+## 建立group和space
 G = CyclicGroup(2)
+gspace = escnn.gspaces.no_base_space(G)
 
-               
 # 添加需要的变换函数
-# obs transition functions for actor & critic
+
+#### obs使用的
+# 3
 add_repr_to_gspace(G, [0, 1, 2], [-1, 1, -1], 'base_ang_vel')
+# 3
 add_repr_to_gspace(G, [0, 1, 2], [1, -1, 1], 'projected_gravity')
-add_repr_to_gspace(G, [0, 1, 2], [1, -1, -1], 'commands')
-add_repr_to_gspace(G, [6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 12, 20, 21, 22, 23, 24, 25, 26, 13, 14, 15, 16, 17, 18, 19],
-                      [1, -1, -1, 1, 1, -1, 1, -1, -1, 1, 1, -1, -1, 1, -1, -1, 1, -1, 1, -1, 1, -1, -1, 1, -1, 1, -1],
-                      'dof_pos_vel_action')
+# 29, actor obs 中几个29维度的子观测, 对称的方法一致，所以可以不变就能复用
+add_repr_to_gspace(G, [6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 12, 13, 14, 22, 23, 24, 25, 26, 27, 28, 15, 16, 17, 18, 19, 20, 21], 
+                   [1, -1, -1, 1, 1, -1, 1, -1, -1, 1, 1, -1, -1, -1, 1, 1, -1, -1, 1, -1, 1, -1, 1, -1, -1, 1, -1, 1, -1], 
+                   'dof_pos')
+# 3
+add_repr_to_gspace(G, [0, 1, 2], [1, -1, 1], 'target_base_pos_delta')
+# 4
+add_repr_to_gspace(G, [0, 1, 2, 3], [-1, 1, -1, 1], 'target_base_quat_delta')
+# 203
+add_repr_to_gspace(G, [42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 
+                    100, 101, 102, 103, 104, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153,],
+                [1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1],
+                'target_keyponts_delta')
 
-add_repr_to_gspace(G, [0, 1], [-1, -1], 'phase')
+#### critic 使用的
+# 输入相比actor的obs还多了一些
+# TODO: 这里需要添加一些新的变换
 
-                # obs transition functions for critic only
-add_repr_to_gspace(G, [0, 1, 2], [-1, 1, 1], 'base_lin_vel')
-add_repr_to_gspace(G, [176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 
-                                            154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 
-                                            132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 
-                                            110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 
-                                            88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 66, 67, 68, 69, 70, 
-                                            71, 72, 73, 74, 75, 76, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 
-                                            54, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 11, 12, 13, 14, 
-                                            15, 16, 17, 18, 19, 20, 21, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], np.ones(187), 'heights_obs')
-add_repr_to_gspace(G, [0], [1], 'scalar')
+# 输出不变
+add_repr_to_gspace(G, [0], [1], 'critic_value')
 
-
-representations = ['base_ang_vel', 'projected_gravity', 'commands', 
-                                   *('dof_pos_vel_action',)*3, 'phase'] * 5
-
-
-
-representations_action = ['dof_pos_vel_action']
-
-
-representations_crtic = ['base_lin_vel', 'base_ang_vel', 'projected_gravity', 'commands', 
-                                   *('dof_pos_vel_action',)*3, 'phase', 'heights_obs']
-
+#### action使用的
+add_repr_to_gspace(G, [6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 12, 13, 14, 22, 23, 24, 25, 26, 27, 28, 15, 16, 17, 18, 19, 20, 21],
+                   [1, -1, -1, 1, 1, -1, 1, -1, -1, 1, 1, -1, -1, -1, 1, 1, -1, -1, 1, -1, 1, -1, 1, -1, -1, 1, -1, 1, -1],
+                   'actions')
 
 
 
 """一个标准的obs输入，镜面对称用到的transition排序"""
 OBS_TRANS_NAME = [
-            'base_ang_vel', 'projected_gravity', 'commands', 
-                                   *('dof_pos_vel_action',)*3, 'phase', 'heights_obs'
-                ]
+            "base_ang_vel", "projected_gravity", "dof_pos", 'dof_pos', 'dof_pos',
+            "target_base_pos_delta", "target_base_quat_delta", 'dof_pos',
+            "target_keyponts_delta"
+            ]
 
 """一个标准的critic obs输入，镜面对称用到的transition排序"""
-CRITIC_OBS_TRANS_NAME = ['base_lin_vel'] + OBS_TRANS_NAME 
+CRITIC_OBS_TRANS_NAME = OBS_TRANS_NAME + [ ]
 
-CRITIC_VAL_TRANS_NAME = ['scalar']
+CRITIC_VAL_TRANS_NAME = ['critic_value']
 
 
 """一个标准的action输入，镜面对称用到的transition排序"""
-ACT_TRANS_NAME = ["dof_pos_vel_action"]
+ACT_TRANS_NAME = ["actions"]
 
 
+### 129+ 203 = 332
+"""
+self.obs_buf = torch.cat((  self.base_ang_vel * self.obs_scales.ang_vel, ### 3
+        self.projected_gravity, ### 3
+        (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos, ### 29
+        self.dof_vel * self.obs_scales.dof_vel,### 29
+        self.actions,  ## 29
+        self.target_base_pos_delta * 100.0,  ## 3
+        self.target_base_quat_delta,  ## 4
+        (self.target_dof_pos- self.default_dof_pos)* self.obs_scales.dof_pos,  ## 29
+        self.target_keyponts_delta.view(self.num_envs, -1), ### 203   包含 quat ，不能乘系数
+        ),dim=-1)
+"""

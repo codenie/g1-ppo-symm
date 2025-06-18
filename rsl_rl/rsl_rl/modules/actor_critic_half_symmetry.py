@@ -56,7 +56,7 @@ def generate_swapped_indices(x, y):
     # swapped_L = generate_swapped_indices(measured_points_x, measured_points_y)
 
 
-class ActorCriticSymmetry(nn.Module):
+class ActorCriticHalfSymmetry(nn.Module):
     def __init__(self,  num_vae,
                         num_obs_step,
                         num_critic_obs,
@@ -122,23 +122,23 @@ class ActorCriticSymmetry(nn.Module):
             hidden_dims = actor_hidden_dims, 
             activation = activation,)
 
-        self.critic = SimpleEMLP(self.critic_in_field_type, self.critic_out_field_type,
-            hidden_dims = critic_hidden_dims,
-            activation=activation,)
+        # self.critic = SimpleEMLP(self.critic_in_field_type, self.critic_out_field_type,
+        #     hidden_dims = critic_hidden_dims,
+        #     activation=activation,)
         
         # 构造使用普通的critic网络 Value function     critic
 
-        # activation_fn = get_activation(activation)
-        # critic_layers = []
-        # critic_layers.append(nn.Linear(mlp_input_dim_c, critic_hidden_dims[0]))
-        # critic_layers.append(activation_fn)
-        # for l in range(len(critic_hidden_dims)):
-        #    if l == len(critic_hidden_dims) - 1:
-        #        critic_layers.append(nn.Linear(critic_hidden_dims[l], 1))
-        #    else:
-        #        critic_layers.append(nn.Linear(critic_hidden_dims[l], critic_hidden_dims[l + 1]))
-        #        critic_layers.append(activation_fn)
-        # self.critic = nn.Sequential(*critic_layers)
+        activation_fn = get_activation(activation)
+        critic_layers = []
+        critic_layers.append(nn.Linear(mlp_input_dim_c, critic_hidden_dims[0]))
+        critic_layers.append(activation_fn)
+        for l in range(len(critic_hidden_dims)):
+           if l == len(critic_hidden_dims) - 1:
+               critic_layers.append(nn.Linear(critic_hidden_dims[l], 1))
+           else:
+               critic_layers.append(nn.Linear(critic_hidden_dims[l], critic_hidden_dims[l + 1]))
+               critic_layers.append(activation_fn)
+        self.critic = nn.Sequential(*critic_layers)
 
 
         
@@ -207,8 +207,8 @@ class ActorCriticSymmetry(nn.Module):
     
     
     def evaluate(self, critic_observations):
-        critic_observations = self.critic_in_field_type(critic_observations)
-        value = self.critic(critic_observations).tensor
+        # critic_observations = self.critic_in_field_type(critic_observations)
+        value = self.critic(critic_observations)
         return value
 
 def get_activation(act_name):
